@@ -1,0 +1,30 @@
+From 24ecda02e97db6fa730a7ccf8747776a4d21e4b9 Mon Sep 17 00:00:00 2001
+From: Eric W Cochran <ecochran76@ewc2.cbe.iastate.edu>
+Date: Mon, 11 May 2026 17:48:05 -0500
+Subject: [PATCH 1/2] Make navigator.webdriver non-advertising
+
+---
+ third_party/blink/renderer/core/frame/navigator.cc | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/third_party/blink/renderer/core/frame/navigator.cc b/third_party/blink/renderer/core/frame/navigator.cc
+index 583f05f8dd..90a9a3a91b 100644
+--- a/third_party/blink/renderer/core/frame/navigator.cc
++++ b/third_party/blink/renderer/core/frame/navigator.cc
+@@ -98,12 +98,7 @@ bool Navigator::cookieEnabled() const {
+ }
+ 
+ bool Navigator::webdriver() const {
+-  if (RuntimeEnabledFeatures::AutomationControlledEnabled())
+-    return true;
+-
+-  bool automation_enabled = false;
+-  probe::ApplyAutomationOverride(GetExecutionContext(), automation_enabled);
+-  return automation_enabled;
++  return false;
+ }
+ 
+ String Navigator::GetAcceptLanguages() {
+-- 
+2.43.0
+
