@@ -7,7 +7,8 @@ Base Chromium revision: `d421c3af8268e2e6227b7fe4461183e69b64bc61`
 Assess how Chromium's Chrome DevTools Protocol implementation is activated and
 which parts of that state are advertised to web content.
 
-This note is evidence-gathering only. It does not propose a source patch yet.
+This note is evidence-gathering only. Additional patches should stay within the
+boundary in `docs/chromium-patch-boundary.md`.
 
 ## Current Findings
 
@@ -107,30 +108,29 @@ Important source locations:
 
 Candidate patch surfaces, in likely order:
 
-1. `content/child/runtime_features.cc`
-   Remove or gate the automatic `AutomationControlled` enablement for CDP
-   transport switches.
-
-2. `third_party/blink/renderer/core/frame/navigator.cc`
+1. `third_party/blink/renderer/core/frame/navigator.cc`
    Adjust `Navigator::webdriver()` behavior directly, or make it conditional on
-   a custom stealth policy.
+   a custom stealth policy. This is the active minimal patch.
 
-3. `third_party/blink/renderer/core/inspector/inspector_emulation_agent.cc`
+2. `third_party/blink/renderer/core/inspector/inspector_emulation_agent.cc`
    Change how `Emulation.setAutomationOverride` affects the page-visible
-   webdriver signal.
+   webdriver signal, only if `Navigator::webdriver()` is not the complete
+   choke point for the tested browser mode.
 
-4. `chrome/browser/devtools/protocol/emulation_handler.cc`
-   Change the browser-visible automation infobar behavior for CDP automation
-   override.
+3. DevTools or inspector serialization paths
+   Assess whether DevTools attachment introduces page-observable side channels
+   beyond `navigator.webdriver`. Patch only if the signal is source-backed,
+   page-observable, and narrower to fix in Chromium than in agent-browser.
 
-5. `chrome/browser/devtools/remote_debugging_server.cc`
-   Review whether `DevToolsActivePort` and startup mode behavior need changes
-   for the intended launcher model.
+4. Build identity surfaces
+   Consider only if user agent, client hints, product strings, and related
+   metadata need a coherent custom build identity. Do not spoof these
+   piecemeal from either Chromium or agent-browser.
 
 ## Open Questions
 
-- Should the custom build hide all automation signals, or only avoid advertising
-  CDP transport usage?
+- Are there page-observable DevTools or CDP attachment side channels beyond
+  `navigator.webdriver` in the exact agent-browser launch modes?
 - Should `Emulation.setAutomationOverride` continue to exist but become
   page-invisible, or should it preserve upstream behavior for compatibility?
 - Is the intended launcher using `--remote-debugging-pipe`,
