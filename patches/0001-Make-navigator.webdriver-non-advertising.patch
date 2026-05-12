@@ -1,7 +1,7 @@
 From 24ecda02e97db6fa730a7ccf8747776a4d21e4b9 Mon Sep 17 00:00:00 2001
 From: Eric W Cochran <ecochran76@ewc2.cbe.iastate.edu>
 Date: Mon, 11 May 2026 17:48:05 -0500
-Subject: [PATCH 1/2] Make navigator.webdriver non-advertising
+Subject: [PATCH] Make navigator.webdriver non-advertising
 
 ---
  third_party/blink/renderer/core/frame/navigator.cc | 7 +------

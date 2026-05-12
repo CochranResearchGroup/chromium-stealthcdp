@@ -14,7 +14,7 @@ artifacts from local users or other processes.
 
 ## Minimal Patch Strategy
 
-Use one primary Chromium patch with one optional fallback patch.
+Use one Chromium patch that targets the website-visible automation signal.
 
 ### Patch 1: Make navigator.webdriver stay false
 
@@ -52,37 +52,11 @@ Risk:
   exposure may need expectation updates or exclusion from this custom patch
   queue.
 
-### Patch 2: Remove browser automation infobar for CDP override
-
-Files:
-
-- `chrome/browser/devtools/protocol/emulation_handler.cc`
-
-Change:
-
-- In `EmulationHandler::SetAutomationOverride(bool enabled)`, avoid creating
-  `AutomationInfoBarDelegate`.
-- Keep the fall-through behavior so the protocol call still reaches Blink.
-
-Rationale:
-
-- The infobar is not a direct JavaScript API, but it is user-visible browser UI
-  caused by a CDP automation call.
-- If the objective includes "external visibility" to the person viewing the
-  browser, this is the next smallest target.
-
-Expected result:
-
-- `Emulation.setAutomationOverride` no longer shows an automation infobar.
-
-Risk:
-
-- Browser UI tests that expect the infobar will fail unless patched or omitted.
-
 ## Explicit Non-Goals For Minimal Changeset
 
 Do not change these in the first patch:
 
+- `chrome/browser/devtools/protocol/emulation_handler.cc`
 - `chrome/browser/devtools/remote_debugging_server.cc`
 - `content/child/runtime_features.cc`
 - `content/browser/devtools/devtools_http_handler.cc`
@@ -98,6 +72,9 @@ Reasoning:
   changing the public accessor.
 - `Browser.getBrowserCommandLine` is CDP-client-visible only and already gated
   on `--enable-automation`; it is not website-visible.
+- The automation infobar is browser UI. It is visible to human observers, but it
+  does not expose automation status to external websites through JavaScript or
+  normal web APIs.
 - `window.domAutomationController` is controlled by `--dom-automation`, not CDP,
   and should stay out of the first patch.
 
@@ -125,18 +102,9 @@ Expected value for all modes after Patch 1:
 false
 ```
 
-Additional browser-visible check after Patch 2:
-
-- `Emulation.setAutomationOverride({enabled: true})` should not add an
-  automation infobar.
-
 ## Recommended Patch Queue
 
 1. `0001-Make-navigator-webdriver-non-advertising.patch`
-2. `0002-Do-not-show-automation-infobar-for-CDP-override.patch`
-
-Patch 2 can be skipped if "external visibility" is limited strictly to website
-JavaScript-observable state.
 
 ## Build And Test Commands
 
