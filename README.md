@@ -34,3 +34,28 @@ descendant:
 ```sh
 git am /path/to/chromium-stealthcdp/patches/*.patch
 ```
+
+## Promote A Built Binary
+
+Do not point downstream tools at `src/out/.../chrome` as a release contract.
+Promote a smoke-tested build into the local artifact root instead:
+
+```sh
+scripts/smoke.sh \
+  --chrome ../src/out/Default/chrome \
+  --output /tmp/chromium-stealthcdp-smoke-current.json
+
+scripts/promote-artifact.sh \
+  --src-out ../src/out/Default \
+  --artifact-root ../artifacts/chromium-stealthcdp \
+  --smoke-json /tmp/chromium-stealthcdp-smoke-current.json
+```
+
+The stable local executable path is then:
+
+```text
+../artifacts/chromium-stealthcdp/current/chrome-linux/chrome
+```
+
+Each promoted artifact includes `manifest.json`, `smoke.json`, patch copies,
+and patch checksums.
