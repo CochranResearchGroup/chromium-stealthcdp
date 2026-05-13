@@ -75,7 +75,9 @@ const patchsetSha = manifest.patchset && manifest.patchset.repoSha;
 if (!patchsetSha) {
   throw new Error('manifest does not include patchset repo SHA');
 }
-const artifactName = manifest.artifactName || `${versionNumber}+stealthcdp.${patchsetSha.slice(0, 12)}`;
+const patchQueueSha = manifest.patchset && manifest.patchset.patchQueueSha256;
+const packageIdentitySha = patchQueueSha || patchsetSha;
+const artifactName = manifest.artifactName || `${versionNumber}+stealthcdp.${packageIdentitySha.slice(0, 12)}`;
 const executable = manifest.executable && manifest.executable.relativePath;
 if (!executable) {
   throw new Error('manifest does not include executable relative path');
@@ -83,7 +85,7 @@ if (!executable) {
 console.log(JSON.stringify({
   versionNumber,
   artifactName,
-  patchsetShort: patchsetSha.slice(0, 12),
+  patchsetShort: packageIdentitySha.slice(0, 12),
   executable,
 }));
 NODE

@@ -69,7 +69,16 @@ chromium_dirty="$(git -C "$chromium_src" status --short --untracked-files=no)"
 upstream_revision="$(tr -d '[:space:]' < "$repo_root/upstream-revision.txt")"
 chrome_version="$("$chrome" --version | sed 's/[[:space:]]*$//')"
 version_number="$(printf '%s\n' "$chrome_version" | awk '{print $2}')"
-patchset_short="${patchset_sha:0:12}"
+patch_queue_sha="$(
+  cd "$repo_root/patches"
+  find . -type f -name '*.patch' -print0 \
+    | sort -z \
+    | xargs -0 sha256sum \
+    | sed 's#  \./#  #' \
+    | sha256sum \
+    | awk '{print $1}'
+)"
+patchset_short="${patch_queue_sha:0:12}"
 artifact_name="${version_number}+stealthcdp.${patchset_short}"
 dest="$artifact_root/$artifact_name"
 
@@ -123,9 +132,13 @@ done
 cp -a "$repo_root"/patches/*.patch "$dest/patches/"
 cp -a "$smoke_json" "$dest/smoke.json"
 
-find "$dest/patches" -type f -name '*.patch' -print0 \
-  | sort -z \
-  | xargs -0 sha256sum > "$dest/patches.sha256"
+(
+  cd "$dest/patches"
+  find . -type f -name '*.patch' -print0 \
+    | sort -z \
+    | xargs -0 sha256sum \
+    | sed 's#  \./#  #'
+) > "$dest/patches.sha256"
 
 manifest_tmp="$dest/manifest.json.tmp"
 ARTIFACT_NAME="$artifact_name" \
@@ -133,6 +146,7 @@ ARTIFACT_PATH="$dest" \
 CHROME_VERSION="$chrome_version" \
 CHROMIUM_SHA="$chromium_sha" \
 PATCHSET_SHA="$patchset_sha" \
+PATCH_QUEUE_SHA="$patch_queue_sha" \
 PATCHSET_DIRTY="$patchset_dirty" \
 CHROMIUM_DIRTY="$chromium_dirty" \
 UPSTREAM_REVISION="$upstream_revision" \
@@ -165,6 +179,7 @@ const manifest = {
   },
   patchset: {
     repoSha: process.env.PATCHSET_SHA,
+    patchQueueSha256: process.env.PATCH_QUEUE_SHA,
     dirty: process.env.PATCHSET_DIRTY.length > 0,
   },
   executable: {

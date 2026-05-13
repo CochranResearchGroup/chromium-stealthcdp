@@ -86,6 +86,42 @@ function sha256(file) {
   return hash.digest('hex');
 }
 
+function sha256Text(text) {
+  const hash = crypto.createHash('sha256');
+  hash.update(text);
+  return hash.digest('hex');
+}
+
+function patchQueueSha(dir) {
+  const patchesDir = path.join(dir, 'patches');
+  if (!fs.existsSync(patchesDir)) {
+    return '';
+  }
+  const files = fs.readdirSync(patchesDir)
+    .filter((name) => name.endsWith('.patch'))
+    .sort();
+  const lines = files.map((name) => {
+    const file = path.join(patchesDir, name);
+    return `${sha256(file)}  ${name}\n`;
+  });
+  return sha256Text(lines.join(''));
+}
+
+function patchQueueShaFromList(file) {
+  const lines = fs.readFileSync(file, 'utf8')
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => {
+      const match = line.match(/^([a-f0-9]{64})\s+(.+)$/i);
+      if (!match) {
+        fail(3, `invalid patch checksum line: ${line}`, { file });
+      }
+      return `${match[1].toLowerCase()}  ${path.basename(match[2])}\n`;
+    })
+    .sort();
+  return sha256Text(lines.join(''));
+}
+
 function fail(code, message, extra = {}) {
   console.log(JSON.stringify({
     schema: 'chromium-stealthcdp.freshness.v1',
@@ -158,7 +194,8 @@ if (!smokeJson.success || String(smokeJson.checks && smokeJson.checks.navigatorW
 const currentChromiumSha = git(srcDir, ['rev-parse', 'HEAD']);
 const currentPatchsetSha = git(repoRoot, ['rev-parse', 'HEAD']);
 const srcDirty = git(srcDir, ['status', '--short', '--untracked-files=no']);
-const patchsetDirty = git(repoRoot, ['status', '--short']);
+const currentPatchQueueSha = patchQueueSha(repoRoot);
+const artifactPatchQueueSha = patchQueueShaFromList(patchShaList);
 
 const mismatches = [];
 if (manifest.chromium.sourceSha !== currentChromiumSha) {
@@ -168,18 +205,15 @@ if (manifest.chromium.sourceSha !== currentChromiumSha) {
     current: currentChromiumSha,
   });
 }
-if (manifest.patchset.repoSha !== currentPatchsetSha) {
+if (artifactPatchQueueSha !== currentPatchQueueSha) {
   mismatches.push({
-    field: 'patchset.repoSha',
-    manifest: manifest.patchset.repoSha,
-    current: currentPatchsetSha,
+    field: 'patchset.patchQueueSha256',
+    manifest: artifactPatchQueueSha,
+    current: currentPatchQueueSha,
   });
 }
 if (srcDirty.length > 0) {
   mismatches.push({ field: 'chromium.dirty', manifest: false, current: true });
-}
-if (patchsetDirty.length > 0) {
-  mismatches.push({ field: 'patchset.dirty', manifest: false, current: true });
 }
 
 if (mismatches.length) {
@@ -197,7 +231,9 @@ console.log(JSON.stringify({
   manifest: manifestPath,
   chromeVersion: manifest.chromeVersion,
   chromiumSha: currentChromiumSha,
+  artifactPatchsetSha: manifest.patchset.repoSha,
   patchsetSha: currentPatchsetSha,
+  patchQueueSha256: currentPatchQueueSha,
   executable,
 }, null, 2));
 NODE
