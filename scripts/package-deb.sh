@@ -66,6 +66,9 @@ const manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 if (manifest.schema !== 'chromium-stealthcdp.artifact.v1') {
   throw new Error(`unsupported manifest schema: ${manifest.schema}`);
 }
+if (manifest.platform && manifest.platform !== 'linux') {
+  throw new Error(`package-deb requires a linux artifact, got: ${manifest.platform}`);
+}
 const chromeVersion = manifest.chromeVersion || '';
 const versionNumber = chromeVersion.replace(/^Chromium\s+/, '').trim();
 if (!versionNumber) {

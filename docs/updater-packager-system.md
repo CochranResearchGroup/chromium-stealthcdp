@@ -450,6 +450,7 @@ browser sessions.
 - Add `smoke-windows.sh` and `smoke-windows.ps1`.
 - Extend `promote-artifact.sh` to copy `chrome-win64/` artifacts.
 - Add `package-windows-zip.sh`.
+- Add `verify-windows-artifact.sh`.
 - Verify the zip by extracting it, launching `chrome.exe` through PowerShell,
   and asserting `navigator.webdriver=false` over CDP from WSL.
 

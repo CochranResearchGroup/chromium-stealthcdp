@@ -102,3 +102,21 @@ The Windows lane is tracked in `docs/updater-packager-system.md`. The intended
 flow is to cross-build Chromium from WSL with `target_os = "win"`, launch the
 resulting `chrome.exe` through PowerShell for smoke verification, promote it as
 `chrome-win64/`, and package it first as a `.zip`.
+
+After a Windows build exists, the artifact flow is:
+
+```sh
+scripts/smoke-windows.sh \
+  --chrome ../src/out/WinStealthCDP/chrome.exe \
+  --output /tmp/chromium-stealthcdp-smoke-win.json
+
+scripts/promote-artifact.sh \
+  --platform win \
+  --src-out ../src/out/WinStealthCDP \
+  --artifact-root ../artifacts/chromium-stealthcdp \
+  --smoke-json /tmp/chromium-stealthcdp-smoke-win.json
+
+scripts/package-windows-zip.sh \
+  --artifact ../artifacts/chromium-stealthcdp/current \
+  --output-dir ../artifacts/chromium-stealthcdp/packages
+```
