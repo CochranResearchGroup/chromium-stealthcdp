@@ -55,14 +55,23 @@ if [[ ! -f "$chrome" ]]; then
 fi
 
 powershell_cmd=""
-for candidate in powershell.exe pwsh.exe powershell pwsh; do
+for candidate in \
+  powershell.exe \
+  pwsh.exe \
+  powershell \
+  pwsh \
+  "/mnt/c/Program Files/PowerShell/7/pwsh.exe" \
+  /mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe; do
   if command -v "$candidate" >/dev/null 2>&1; then
+    powershell_cmd="$candidate"
+    break
+  elif [[ -x "$candidate" ]]; then
     powershell_cmd="$candidate"
     break
   fi
 done
 if [[ -z "$powershell_cmd" ]]; then
-  echo "required tool not found: powershell.exe" >&2
+  echo "required tool not found: powershell.exe or pwsh.exe" >&2
   exit 2
 fi
 
@@ -78,7 +87,9 @@ chrome_abs="$(realpath "$chrome")"
 output="${output:-$repo_root/smoke-win.json}"
 mkdir -p "$(dirname "$output")"
 
-tmpdir="$(mktemp -d)"
+windows_temp="$("$powershell_cmd" -NoProfile -Command '[Console]::Out.Write($env:TEMP)')"
+windows_temp_wsl="$(wslpath -u "$windows_temp")"
+tmpdir="$(mktemp -d "$windows_temp_wsl/chromium-stealthcdp-smoke.XXXXXX")"
 user_data="$tmpdir/user-data-win"
 log="$tmpdir/chrome-win.log"
 launch_json="$tmpdir/launch.json"

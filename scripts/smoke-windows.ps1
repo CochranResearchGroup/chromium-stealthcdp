@@ -37,12 +37,23 @@ New-Item -ItemType Directory -Force -Path $UserDataDir | Out-Null
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $LogPath) | Out-Null
 $ErrorLogPath = "$LogPath.err"
 
-$versionOutput = (& $ChromePath --version 2>&1 | Out-String).Trim()
+$versionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($ChromePath)
+$productName = $versionInfo.ProductName
+$productVersion = $versionInfo.ProductVersion
+if ($productName -and $productVersion) {
+  $versionOutput = "$($productName.Trim()) $($productVersion.Trim())"
+} elseif ($productVersion) {
+  $versionOutput = $productVersion.Trim()
+} else {
+  $versionOutput = ""
+}
 
 $arguments = @(
   "--headless=new",
   "--disable-gpu",
   "--disable-dev-shm-usage",
+  "--enable-logging",
+  "--log-file=$LogPath",
   "--remote-debugging-address=$RemoteDebuggingAddress",
   "--remote-debugging-port=0",
   "--user-data-dir=$UserDataDir",
@@ -54,9 +65,7 @@ $arguments = @(
 $process = Start-Process `
   -FilePath $ChromePath `
   -ArgumentList $arguments `
-  -RedirectStandardOutput $LogPath `
-  -RedirectStandardError $ErrorLogPath `
-  -NoNewWindow `
+  -WindowStyle Hidden `
   -PassThru
 
 $result = [ordered]@{
