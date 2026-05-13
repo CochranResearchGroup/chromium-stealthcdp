@@ -80,6 +80,10 @@ if [[ -n "$depot_tools" ]]; then
   export PATH="$depot_tools:$PATH"
 fi
 
+if [[ -d "$src/buildtools/linux64" ]]; then
+  export PATH="$src/buildtools/linux64:$PATH"
+fi
+
 for tool in gn autoninja; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "required Chromium build tool not found: $tool" >&2
@@ -105,9 +109,15 @@ esac
 out_dir="$src/$out"
 
 if [[ ! -f "$out_dir/args.gn" ]]; then
-  gn gen "$out_dir" --args="$gn_args"
+  (
+    cd "$src"
+    gn gen "$out" --args="$gn_args"
+  )
 else
   echo "using existing GN args: $out_dir/args.gn"
 fi
 
-autoninja -C "$out_dir" "$target"
+(
+  cd "$src"
+  autoninja -C "$out" "$target"
+)

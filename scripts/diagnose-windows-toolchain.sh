@@ -56,12 +56,15 @@ script="$tmpdir/diagnose-windows-toolchain.ps1"
 cat > "$script" <<'PS1'
 $ErrorActionPreference = "Stop"
 
-function FirstPath($Root, $Filter) {
+function FirstPath($Root, $Filter, $Pattern = $null) {
   if (-not (Test-Path -LiteralPath $Root)) {
     return $null
   }
-  Get-ChildItem -LiteralPath $Root -Recurse -Filter $Filter -ErrorAction SilentlyContinue |
-    Select-Object -First 1 -ExpandProperty FullName
+  $items = Get-ChildItem -LiteralPath $Root -Recurse -Filter $Filter -ErrorAction SilentlyContinue
+  if ($Pattern) {
+    $items = $items | Where-Object { $_.FullName -like $Pattern }
+  }
+  $items | Select-Object -First 1 -ExpandProperty FullName
 }
 
 $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
@@ -76,11 +79,11 @@ if (Test-Path -LiteralPath $vswhere) {
 $programFiles = [Environment]::GetFolderPath("ProgramFiles")
 $programFilesX86 = [Environment]::GetFolderPath("ProgramFilesX86")
 $vsRoot = if ($vs) { $vs.installationPath } else { Join-Path $programFiles "Microsoft Visual Studio" }
-$cl = FirstPath $vsRoot "cl.exe"
-$link = FirstPath $vsRoot "link.exe"
+$cl = FirstPath $vsRoot "cl.exe" "*\bin\Hostx64\x64\cl.exe"
+$link = FirstPath $vsRoot "link.exe" "*\bin\Hostx64\x64\link.exe"
 $vcvars = FirstPath $vsRoot "vcvarsall.bat"
-$rc = FirstPath (Join-Path $programFilesX86 "Windows Kits\10") "rc.exe"
-$midl = FirstPath (Join-Path $programFilesX86 "Windows Kits\10") "midl.exe"
+$rc = FirstPath (Join-Path $programFilesX86 "Windows Kits\10") "rc.exe" "*\bin\10.0.26100.0\x64\rc.exe"
+$midl = FirstPath (Join-Path $programFilesX86 "Windows Kits\10") "midl.exe" "*\bin\10.0.26100.0\x64\midl.exe"
 
 $result = [ordered]@{
   powershell = $PSVersionTable.PSVersion.ToString()

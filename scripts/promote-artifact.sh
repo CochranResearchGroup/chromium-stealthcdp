@@ -82,6 +82,7 @@ if [[ ! -f "$smoke_json" ]]; then
   echo "smoke JSON not found: $smoke_json" >&2
   exit 2
 fi
+smoke_json="$(realpath "$smoke_json")"
 
 if ! node -e 'const s=require(process.argv[1]); process.exit(s.success ? 0 : 1)' "$smoke_json"; then
   echo "smoke JSON does not report success: $smoke_json" >&2
@@ -172,6 +173,11 @@ else
     vk_swiftshader.dll
     vk_swiftshader_icd.json
     vulkan-1.dll
+    msvcp140.dll
+    msvcp140_atomic_wait.dll
+    vccorlib140.dll
+    vcruntime140.dll
+    vcruntime140_1.dll
   )
 
   runtime_dirs=(
@@ -190,6 +196,14 @@ for file in "${runtime_files[@]}"; do
     cp -a "$src_out/$file" "$dest/$artifact_runtime_dir/"
   fi
 done
+
+if [[ "$platform" == "win" ]]; then
+  shopt -s nullglob
+  for manifest in "$src_out"/*.manifest; do
+    cp -a "$manifest" "$dest/$artifact_runtime_dir/"
+  done
+  shopt -u nullglob
+fi
 
 for dir in "${runtime_dirs[@]}"; do
   if [[ -d "$src_out/$dir" ]]; then

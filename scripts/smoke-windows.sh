@@ -84,16 +84,18 @@ done
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 chrome_abs="$(realpath "$chrome")"
+chrome_dir="$(dirname "$chrome_abs")"
 output="${output:-$repo_root/smoke-win.json}"
 mkdir -p "$(dirname "$output")"
 
 windows_temp="$("$powershell_cmd" -NoProfile -Command '[Console]::Out.Write($env:TEMP)')"
 windows_temp_wsl="$(wslpath -u "$windows_temp")"
 tmpdir="$(mktemp -d "$windows_temp_wsl/chromium-stealthcdp-smoke.XXXXXX")"
+stage="$tmpdir/chrome-win64"
 user_data="$tmpdir/user-data-win"
 log="$tmpdir/chrome-win.log"
 launch_json="$tmpdir/launch.json"
-mkdir -p "$user_data"
+mkdir -p "$stage" "$user_data"
 chrome_pid=""
 cleanup() {
   if [[ -n "$chrome_pid" ]]; then
@@ -105,6 +107,69 @@ cleanup() {
   rm -rf "$tmpdir"
 }
 trap cleanup EXIT
+
+runtime_files=(
+  chrome.exe
+  chrome.dll
+  chrome_elf.dll
+  chrome_100_percent.pak
+  chrome_200_percent.pak
+  d3dcompiler_47.dll
+  dxcompiler.dll
+  dxil.dll
+  headless_command_resources.pak
+  icudtl.dat
+  libEGL.dll
+  libGLESv2.dll
+  resources.pak
+  snapshot_blob.bin
+  v8_context_snapshot.bin
+  vk_swiftshader.dll
+  vk_swiftshader_icd.json
+  vulkan-1.dll
+  msvcp140.dll
+  msvcp140_atomic_wait.dll
+  vccorlib140.dll
+  vcruntime140.dll
+  vcruntime140_1.dll
+)
+
+runtime_dirs=(
+  locales
+  resources
+  MEIPreload
+  PrivacySandboxAttestationsPreloaded
+  hyphen-data
+  IwaKeyDistribution
+  swiftshader
+)
+
+for file in "${runtime_files[@]}"; do
+  if [[ -e "$chrome_dir/$file" ]]; then
+    cp -a "$chrome_dir/$file" "$stage/"
+  fi
+done
+
+shopt -s nullglob
+for manifest in "$chrome_dir"/*.manifest; do
+  cp -a "$manifest" "$stage/"
+done
+shopt -u nullglob
+
+for dir in "${runtime_dirs[@]}"; do
+  if [[ -d "$chrome_dir/$dir" ]]; then
+    cp -a "$chrome_dir/$dir" "$stage/"
+  fi
+done
+
+stage_win="$(wslpath -w "$stage")"
+"$powershell_cmd" -NoProfile -Command "\$path = '$stage_win'; icacls.exe \$path /grant '*S-1-15-2-1:(OI)(CI)(RX)' '*S-1-15-2-2:(OI)(CI)(RX)' /T /Q | Out-Null"
+
+chrome_abs="$stage/chrome.exe"
+if [[ ! -f "$chrome_abs" ]]; then
+  echo "staged chrome.exe not found: $chrome_abs" >&2
+  exit 1
+fi
 
 chrome_win="$(wslpath -w "$chrome_abs")"
 user_data_win="$(wslpath -w "$user_data")"
