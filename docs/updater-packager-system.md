@@ -307,9 +307,10 @@ browser sessions.
 ### Phase 3: Debian Packaging
 
 - Add `package-deb.sh`.
-- Add Debian metadata.
+- Add package metadata generated from the promoted artifact manifest.
 - Package the promoted artifact side-by-side under `/opt/chromium-stealthcdp`.
-- Verify install, executable path, version, and webdriver smoke.
+- Verify install, executable path, version, and webdriver smoke with
+  `verify-installed.sh`.
 
 ### Phase 4: Agent-Browser Guardrails
 

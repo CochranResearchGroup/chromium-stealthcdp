@@ -73,3 +73,25 @@ scripts/check-freshness.sh \
 
 Exit code `0` means fresh, `1` means stale, `2` means missing, and `3` means the
 manifest or artifact is invalid.
+
+## Build a Debian Package
+
+Package the promoted artifact, not the live Chromium build tree:
+
+```sh
+scripts/package-deb.sh \
+  --artifact ../artifacts/chromium-stealthcdp/current \
+  --output-dir ../artifacts/chromium-stealthcdp/packages
+```
+
+The package installs side-by-side under `/opt/chromium-stealthcdp` and exposes:
+
+```text
+/usr/bin/chromium-stealthcdp
+```
+
+Verify an installed package with:
+
+```sh
+scripts/verify-installed.sh
+```
