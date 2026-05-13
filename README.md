@@ -106,6 +106,16 @@ resulting `chrome.exe` through PowerShell for smoke verification, promote it as
 After a Windows build exists, the artifact flow is:
 
 ```sh
+scripts/ensure-windows-target.sh --workspace ..
+PATH=/home/ecochran76/workspace.local/depot_tools:$PATH gclient sync
+
+scripts/diagnose-windows-toolchain.sh
+
+scripts/build.sh \
+  --target-os win \
+  --src ../src \
+  --out out/WinStealthCDP
+
 scripts/smoke-windows.sh \
   --chrome ../src/out/WinStealthCDP/chrome.exe \
   --output /tmp/chromium-stealthcdp-smoke-win.json
@@ -120,3 +130,9 @@ scripts/package-windows-zip.sh \
   --artifact ../artifacts/chromium-stealthcdp/current \
   --output-dir ../artifacts/chromium-stealthcdp/packages
 ```
+
+If `gclient sync` fails at `src/build/vs_toolchain.py update --force` with a
+Google Storage 401, run `scripts/diagnose-windows-toolchain.sh`. The local
+fallback needs Visual Studio C++ tools and Windows SDK 10.0.26100.0 installed
+before Chromium's `depot_tools/win_toolchain/package_from_installed.py` can
+produce the toolchain zip.

@@ -202,6 +202,25 @@ freshness model. A packaging-script-only commit must not force either binary to
 be rebuilt; only a Chromium source SHA change or patch queue checksum change
 should make artifacts stale.
 
+If `gclient sync` fails in `src/build/vs_toolchain.py update --force` with a
+Google Storage 401, this host cannot download Chromium's private packaged
+Windows toolchain. The local fallback is to install the Visual Studio C++
+components and Windows SDK locally, then package that install with
+`depot_tools/win_toolchain/package_from_installed.py`.
+
+Required local components:
+
+```text
+Microsoft.VisualStudio.Workload.NativeDesktop
+Microsoft.VisualStudio.Component.VC.ATLMFC
+Microsoft.VisualStudio.Component.VC.Tools.ARM64
+Microsoft.VisualStudio.Component.VC.MFC.ARM64
+Windows SDK 10.0.26100.0 with debuggers
+```
+
+`scripts/diagnose-windows-toolchain.sh` must find `cl.exe`, `link.exe`,
+`vcvarsall.bat`, `rc.exe`, and `midl.exe` before this fallback is ready.
+
 ## Smoke Contract
 
 `scripts/smoke.sh` is the promotion gate.
@@ -445,7 +464,10 @@ browser sessions.
 
 ### Phase 5: Windows Cross-Build And Zip Packaging
 
-- Add `.gclient`/bootstrap support for `target_os = ['win']`.
+- Add `.gclient`/bootstrap support for `target_os = ['win']` with
+  `ensure-windows-target.sh`.
+- Add `diagnose-windows-toolchain.sh` to prove PowerShell, Visual Studio C++
+  tools, and Windows SDK readiness before retrying `gclient sync`.
 - Add `build.sh --target-os win --out out/WinStealthCDP`.
 - Add `smoke-windows.sh` and `smoke-windows.ps1`.
 - Extend `promote-artifact.sh` to copy `chrome-win64/` artifacts.
