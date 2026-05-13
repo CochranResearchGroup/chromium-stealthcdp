@@ -95,3 +95,10 @@ Verify an installed package with:
 ```sh
 scripts/verify-installed.sh
 ```
+
+## Windows Cross-Build Plan
+
+The Windows lane is tracked in `docs/updater-packager-system.md`. The intended
+flow is to cross-build Chromium from WSL with `target_os = "win"`, launch the
+resulting `chrome.exe` through PowerShell for smoke verification, promote it as
+`chrome-win64/`, and package it first as a `.zip`.

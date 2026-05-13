@@ -11,7 +11,9 @@ incremental updates when a checkout already exists.
 
 The output should be a promoted `chromium-stealthcdp` runtime artifact that
 agent-browser can consume through a stable executable path, plus an optional
-side-by-side Debian package for operational deployment.
+side-by-side Debian package for operational deployment. A Windows lane should
+use Chromium's Linux-to-Windows cross-build support from WSL, then launch and
+smoke the resulting `.exe` through PowerShell on the Windows host.
 
 ## Non-Goals
 
@@ -20,6 +22,8 @@ side-by-side Debian package for operational deployment.
 - Do not hide local DevTools endpoints, process flags, or package identity from
   local machine users.
 - Do not add broad fingerprint patches as part of packaging.
+- Do not require Wine for Windows validation when the WSL host can run the
+  generated `.exe` through PowerShell.
 
 ## Repository Layout
 
@@ -32,10 +36,14 @@ scripts/
   apply-patches.sh
   build.sh
   smoke.sh
+  smoke-windows.ps1
+  smoke-windows.sh
   check-freshness.sh
   promote-artifact.sh
   package-deb.sh
+  package-windows-zip.sh
   verify-installed.sh
+  verify-windows-artifact.sh
 packaging/debian/
   control
   postinst
@@ -161,6 +169,39 @@ The build metadata should include:
 - build started/finished timestamps
 - `chrome --version`
 
+## Windows Cross-Build Contract
+
+The Windows lane should be explicit rather than overloading the Linux output
+directory. A fresh checkout needs `target_os = ['win']` in `.gclient` before
+`gclient sync`; an existing checkout can add it and resync.
+
+Recommended output directory:
+
+```text
+../src/out/WinStealthCDP
+```
+
+Recommended GN args:
+
+```gn
+target_os = "win"
+target_cpu = "x64"
+is_debug = false
+symbol_level = 0
+is_component_build = false
+```
+
+Build command:
+
+```sh
+autoninja -C ../src/out/WinStealthCDP chrome
+```
+
+The Linux and Windows build lanes should share the same patch queue and
+freshness model. A packaging-script-only commit must not force either binary to
+be rebuilt; only a Chromium source SHA change or patch queue checksum change
+should make artifacts stale.
+
 ## Smoke Contract
 
 `scripts/smoke.sh` is the promotion gate.
@@ -186,6 +227,50 @@ Optional checks:
 
 The smoke output should be machine-readable JSON plus concise console text.
 
+## Windows Smoke Contract
+
+The Windows smoke should launch `chrome.exe` on the Windows host through
+PowerShell, then run the same CDP `navigator.webdriver` assertion from WSL.
+
+Proposed scripts:
+
+```text
+scripts/smoke-windows.sh
+scripts/smoke-windows.ps1
+scripts/verify-windows-artifact.sh
+```
+
+`smoke-windows.sh` responsibilities:
+
+1. Accept a WSL path to `chrome.exe`.
+2. Convert paths with `wslpath -w`.
+3. Create a temporary Windows user-data-dir under `%TEMP%`.
+4. Invoke `powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+   scripts/smoke-windows.ps1`.
+5. Read the `DevToolsActivePort` file through the WSL-mounted Windows temp path.
+6. Run the same CDP check used by `scripts/smoke.sh`.
+7. Ask PowerShell to terminate only the process it launched.
+8. Emit JSON with `platform: "win"` and `navigator.webdriver=false`.
+
+`smoke-windows.ps1` responsibilities:
+
+1. Start the provided `chrome.exe` with:
+
+   ```text
+   --headless=new
+   --remote-debugging-port=0
+   --user-data-dir=<temp-profile>
+   --no-first-run
+   --disable-default-apps
+   ```
+
+2. Return the Windows process id, profile directory, and `DevToolsActivePort`
+   path to WSL.
+3. Provide a cleanup mode that kills only the recorded process id.
+
+This keeps Windows process ownership clear and avoids scanning for unrelated
+Chromium processes.
+
 ## Promotion Contract
 
 `scripts/promote-artifact.sh` copies a known-good build out of `out/`.
@@ -194,10 +279,14 @@ Promoted layout:
 
 ```text
 artifacts/chromium-stealthcdp/
-  <chromium-version>+stealthcdp.<patchset-short-sha>/
+  <chromium-version>+stealthcdp.<patch-queue-short-sha>/
     chrome-linux/
       chrome
       chrome-wrapper
+      ...
+    chrome-win64/
+      chrome.exe
+      chrome.dll
       ...
     manifest.json
     smoke.json
@@ -209,6 +298,7 @@ The promoted executable path should be stable through a symlink:
 
 ```text
 artifacts/chromium-stealthcdp/current/chrome-linux/chrome
+artifacts/chromium-stealthcdp/current/chrome-win64/chrome.exe
 ```
 
 The manifest is the source of truth for freshness. Agent-browser should point at
@@ -251,6 +341,39 @@ The package should declare conflicts only with earlier package names owned by
 this project. It should not conflict with `chromium`, `chromium-browser`, or
 `google-chrome-stable`.
 
+## Windows Package Contract
+
+Start with a `.zip`, not an installer. A zip keeps the Windows lane easy to
+build, inspect, and consume from agent-browser without registry or Start Menu
+side effects.
+
+Proposed script:
+
+```sh
+scripts/package-windows-zip.sh \
+  --artifact ../artifacts/chromium-stealthcdp/current \
+  --output-dir ../artifacts/chromium-stealthcdp/packages
+```
+
+Output name:
+
+```text
+chromium-stealthcdp_<chromium-version>+stealthcdp.<patch-queue-short-sha>_win64.zip
+```
+
+Zip layout:
+
+```text
+chromium-stealthcdp/
+  chrome.exe
+  manifest.json
+  smoke-win.json
+  patches/
+```
+
+Installer work, if needed later, should be a separate phase after the zip path
+is proven with agent-browser.
+
 ## Freshness Checks
 
 Add `scripts/check-freshness.sh`.
@@ -258,9 +381,10 @@ Add `scripts/check-freshness.sh`.
 It should compare:
 
 - current `src` Chromium SHA
-- current patchset repo SHA
+- current patch queue checksum
 - promoted artifact manifest Chromium SHA
-- promoted artifact manifest patchset SHA
+- promoted artifact patch queue checksum, or normalized `patches.sha256` for
+  artifacts created before that field existed
 - installed package manifest, if present
 
 Exit codes:
@@ -319,6 +443,16 @@ browser sessions.
 - Keep headed Canva/profile instability tracked in agent-browser, not in this
   Chromium patchset, unless a patched-vs-stock Chromium differential is proven.
 
+### Phase 5: Windows Cross-Build And Zip Packaging
+
+- Add `.gclient`/bootstrap support for `target_os = ['win']`.
+- Add `build.sh --target-os win --out out/WinStealthCDP`.
+- Add `smoke-windows.sh` and `smoke-windows.ps1`.
+- Extend `promote-artifact.sh` to copy `chrome-win64/` artifacts.
+- Add `package-windows-zip.sh`.
+- Verify the zip by extracting it, launching `chrome.exe` through PowerShell,
+  and asserting `navigator.webdriver=false` over CDP from WSL.
+
 ## Release Gate
 
 A binary or `.deb` is releasable only when all are true:
@@ -329,3 +463,5 @@ A binary or `.deb` is releasable only when all are true:
 - Promoted artifact has a complete manifest.
 - Source tree and patchset repo are clean after promotion metadata is reviewed.
 - For `.deb`, install verification passes without replacing system browsers.
+- For Windows zip releases, PowerShell-launched smoke passes from an extracted
+  zip without relying on `src/out/...`.
