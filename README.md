@@ -59,3 +59,17 @@ The stable local executable path is then:
 
 Each promoted artifact includes `manifest.json`, `smoke.json`, patch copies,
 and patch checksums.
+
+## Check Freshness
+
+Before using a promoted binary for long-running agent-browser sessions, verify
+that it still matches the current Chromium checkout and patchset repo:
+
+```sh
+scripts/check-freshness.sh \
+  --src ../src \
+  --artifact ../artifacts/chromium-stealthcdp/current
+```
+
+Exit code `0` means fresh, `1` means stale, `2` means missing, and `3` means the
+manifest or artifact is invalid.

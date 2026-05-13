@@ -32,6 +32,7 @@ scripts/
   apply-patches.sh
   build.sh
   smoke.sh
+  check-freshness.sh
   promote-artifact.sh
   package-deb.sh
   verify-installed.sh
