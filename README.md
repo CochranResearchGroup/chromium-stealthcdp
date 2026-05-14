@@ -129,7 +129,20 @@ scripts/promote-artifact.sh \
 scripts/package-windows-zip.sh \
   --artifact ../artifacts/chromium-stealthcdp/current \
   --output-dir ../artifacts/chromium-stealthcdp/packages
+
+scripts/install-windows-user.sh \
+  --artifact ../artifacts/chromium-stealthcdp/current \
+  --force
+
+scripts/smoke-windows.sh \
+  --chrome /mnt/c/Users/ecoch/AppData/Local/chromium-stealthcdp/current/chrome.exe \
+  --output /tmp/chromium-stealthcdp-installed-win-smoke.json
 ```
+
+Windows executables meant to be run should be installed on the Windows
+filesystem. For a user-scoped WSL tenant install, the default root is the
+tenant owner's LocalAppData directory, for example
+`/mnt/c/Users/ecoch/AppData/Local/chromium-stealthcdp/current/chrome.exe`.
 
 If `gclient sync` fails at `src/build/vs_toolchain.py update --force` with a
 Google Storage 401, run `scripts/diagnose-windows-toolchain.sh`. The local

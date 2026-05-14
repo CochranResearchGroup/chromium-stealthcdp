@@ -65,6 +65,7 @@ $arguments = @(
 $process = Start-Process `
   -FilePath $ChromePath `
   -ArgumentList $arguments `
+  -WorkingDirectory (Split-Path -Parent $ChromePath) `
   -WindowStyle Hidden `
   -PassThru
 

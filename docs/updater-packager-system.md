@@ -366,12 +366,38 @@ Start with a `.zip`, not an installer. A zip keeps the Windows lane easy to
 build, inspect, and consume from agent-browser without registry or Start Menu
 side effects.
 
+Installed Windows executables must live on the Windows filesystem, not under
+the WSL checkout. For a user-scoped install from WSL, use the WSL tenant
+owner's LocalAppData tree:
+
+```text
+/mnt/c/Users/<windows-user>/AppData/Local/chromium-stealthcdp/
+  <chromium-version>+stealthcdp.<patch-queue-short-sha>/
+    chrome.exe
+    chrome.dll
+    manifest.json
+    smoke-win.json
+    patches/
+  current -> <versioned install directory>
+```
+
+On the present workstation the tenant owner is `ecoch`, so the stable installed
+path is:
+
+```text
+/mnt/c/Users/ecoch/AppData/Local/chromium-stealthcdp/current/chrome.exe
+```
+
 Proposed script:
 
 ```sh
 scripts/package-windows-zip.sh \
   --artifact ../artifacts/chromium-stealthcdp/current \
   --output-dir ../artifacts/chromium-stealthcdp/packages
+
+scripts/install-windows-user.sh \
+  --artifact ../artifacts/chromium-stealthcdp/current \
+  --force
 ```
 
 Output name:
@@ -472,6 +498,8 @@ browser sessions.
 - Add `smoke-windows.sh` and `smoke-windows.ps1`.
 - Extend `promote-artifact.sh` to copy `chrome-win64/` artifacts.
 - Add `package-windows-zip.sh`.
+- Add `install-windows-user.sh` so runnable Windows executables are copied to
+  `%LOCALAPPDATA%\chromium-stealthcdp` and exposed through a `current` junction.
 - Add `verify-windows-artifact.sh`.
 - Verify the zip by extracting it, launching `chrome.exe` through PowerShell,
   and asserting `navigator.webdriver=false` over CDP from WSL.
@@ -488,3 +516,5 @@ A binary or `.deb` is releasable only when all are true:
 - For `.deb`, install verification passes without replacing system browsers.
 - For Windows zip releases, PowerShell-launched smoke passes from an extracted
   zip without relying on `src/out/...`.
+- For Windows user installs, the smoke must pass from
+  `/mnt/c/Users/<windows-user>/AppData/Local/chromium-stealthcdp/current/chrome.exe`.
