@@ -40,8 +40,10 @@ disposable browser lane.
   alias remains protected because it currently owns a Windows artifact.
 - The dedicated candidate is fresh and independently hash-verified, and the
   same Linux artifact is registered as agent-browser's
-  `stealthcdp_chromium` executable. Browser acceptance remains blocked before
-  launch by remote-view route acquisition timeout `r807103`.
+  `stealthcdp_chromium` executable. Route reconciliation superseded timeout
+  `r807103`: a new disposable browser is now operator-visible on Route B and
+  renders both the non-Facebook control and Facebook home. The remaining gate
+  is operator login in that disposable profile before posts-search acceptance.
 
 ## Scope
 
@@ -103,9 +105,9 @@ No parallel agents are required for this maintenance-sized repository.
   publication, or downstream production retry
 - Unmet criteria: authenticated disposable Facebook browser acceptance only
 - Ready unit: freeze upstream and update the source checkout after policy audit
-- Blocked unit: authenticated Facebook comparison until agent-browser can
-  assign the ready `guacamole-rdp-a` route to the disposable session, followed
-  by operator seeding if Facebook authentication is absent
+- Blocked unit: authenticated Facebook posts-search comparison until the
+  operator signs in through the open Route B handoff for disposable runtime
+  profile `chromium-153-facebook-acceptance-20260811`
 - Delegation: `not_spawned`; the source pin, dependency sync, patch replay,
   queue export, and build provenance are one coupled critical path. An
   independent evaluator may be used once for the final drift-discovery review.
@@ -338,3 +340,31 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
   summary `none`; next action: repair or reconverge agent-browser route
   acquisition, then repeat the no-launch proof and operator-seed the disposable
   profile if authentication is required. Plan remains `OPEN`.
+- 2026-08-11: Retained route state was reconciled against the two-entry pool
+  emitted by the current remote-view doctor. Reconciliation repaired 277
+  orphaned display-allocation readiness records without releasing active Route
+  A. The dedicated no-launch preflight then selected released allocation
+  `display:shared_display:11` plus available `guacamole-rdp-b`; display access,
+  login, permissions, RDP TCP, route URL, and the idle Route B desktop passed.
+- 2026-08-11: Disposable runtime profile
+  `chromium-153-facebook-acceptance-20260811` launched on Route B with
+  `operatorVisible.state=ready`, display `:11`, target
+  `CFC705E540668856E1BBF0C385CE3EFA`, and PID `20044`. `/proc/20044/exe`
+  resolves to the installed
+  `153.0.8003.0+stealthcdp.86aec912997e/chrome-linux/chrome`, whose live
+  SHA-256 is
+  `17ba663c71256ae0f842c7f22236ba7d4c091d0d6da5f4378d28ea967b38045c`
+  and version is Chromium `153.0.8003.0`. The same tab rendered
+  `https://example.com/` and `https://www.facebook.com/` with
+  `navigator.webdriver === false`. Facebook presented the login form, so no
+  authenticated posts search has been claimed. The browser remains open for
+  operator seeding at the Route B Guacamole handoff.
+- Checkpoint `P0001-C06`: plan version `1`; state `blocked_unit -> active`;
+  progress `outcome_progress`; evidence: authoritative route reconciliation,
+  deterministic Route B dry run, operator-visible installed Chromium 153
+  launch, exact live executable hash and PID, non-Facebook control,
+  Facebook home render, and `navigator.webdriver=false`; subagent status
+  `not_spawned`; authority `disposable-profile-only`; review disposition
+  summary `none`; next action: operator logs into Facebook in the open
+  disposable Route B browser, then the primary agent runs the required posts
+  search and records renderer/crash evidence. Plan remains `OPEN`.
