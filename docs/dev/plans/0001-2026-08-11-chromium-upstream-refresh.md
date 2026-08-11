@@ -225,6 +225,12 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
 - 2026-08-11: Plan opened after selector-driven policy installation.
 - 2026-08-11: Upstream repair identified as CL 7992797 / commit
   `de949449a7fc4df4551492407a65fc3d63015c42` with an upstream crash WPT.
+- 2026-08-11: The no-launch browser access plan did not honor the unknown
+  disposable runtime-profile hint. It selected durable profile
+  `stealthcdp-default`, the registered Chromium 150 executable, and an active
+  `odollo-carrier-usps` profile lease. That route was rejected. Browser
+  acceptance must instead bind the staged executable explicitly to a custom
+  temporary user-data directory and retain detected-profile proof.
 - Checkpoint `P0001-C01`: plan version `1`; state `ready -> active`;
   progress `outcome_progress`; evidence: selector bundle `v0.1.15`, 18 adopted
   modules, wired `AGENTS.md`, and passing normal/active planning audits;
