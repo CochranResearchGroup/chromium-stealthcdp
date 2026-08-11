@@ -97,8 +97,8 @@ No parallel agents are required for this maintenance-sized repository.
 
 ## Execution Governance
 
-- Plan version: `2`
-- State transition: `active -> blocked_unit`
+- Plan version: `3`
+- State transition: `blocked_unit -> blocked_unit`
 - Authority classification: standing authority for policy installation,
   documentation, source update, patch replay, build, tests, candidate staging,
   and disposable validation; operator-granted authority for agent-browser
@@ -389,6 +389,26 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
   authority `disposable-profile-only`; review disposition summary
   `blocking=1` operator-seeded Facebook authentication, `needs_evidence=1`
   authenticated posts-search renderer acceptance, `rejected=2` retained-profile
-  copying and credential automation; next action: the operator signs in at
-  `https://agent-browser.ecochran.dyndns.org/guacamole/#/client/MgBjAHBvc3RncmVzcWw=`,
-  leaves the browser open, and resumes this goal. Plan remains `OPEN`.
+  copying and credential automation; next action: replace the raw Guacamole
+  provider URL with a durable dashboard-backed handoff, then the operator
+  signs in, leaves the browser open, and resumes this goal. Plan remains
+  `OPEN`.
+- 2026-08-11: The operator reported that the raw Guacamole client URL did not
+  resolve as an existing connection. Current remote-view doctor and Guacamole
+  database evidence nevertheless confirm Route B as connection `2`, display
+  `:11`, with retained Chromium PID `20044` healthy. The raw client hash is the
+  provider URL and is not an operator handoff. A canonical service handoff was
+  minted and resolved with `status=ready`, `resolved=true`, browser ID
+  `session:chromium-153-facebook-line-breaker-acceptance`, and durable URL
+  `https://agent-browser.ecochran.dyndns.org/remote-view/http-service-request-remote_view_open-4f2ac073-cf6c-40c8-b6ba-c780887882e0`.
+- Checkpoint `P0001-C08`: plan version `3`; state
+  `blocked_unit -> blocked_unit`; progress `blocker_reduction`; evidence: the
+  stale raw provider link was rejected, the exact retained Chromium browser
+  and Route B were revalidated without launching a duplicate, and the durable
+  dashboard handoff resolves ready to the same browser session; subagent
+  status `not_spawned`; authority `disposable-profile-only`; review
+  disposition summary `blocking=1` operator-seeded Facebook authentication,
+  `needs_evidence=1` authenticated posts-search renderer acceptance,
+  `rejected=2` retained-profile copying and credential automation; next action:
+  the operator signs in through the durable `/remote-view/` handoff, leaves
+  the browser open, and resumes this goal. Plan remains `OPEN`.
