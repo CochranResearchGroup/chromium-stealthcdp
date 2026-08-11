@@ -75,7 +75,13 @@ policy lives under `docs/dev/policies/` and is wired through `AGENTS.md`.
 - The first governed source packet preserved both worktrees, froze an exact
   upstream SHA, bounded dependency-sync retries, separated a Linux hook repair
   from the exhausted sync retry budget, and recorded source-backed checkpoint
-  evidence. Artifact and browser acceptance behavior remains under evaluation.
+  evidence.
+- The governed build packet completed a DCHECK-enabled Chrome build, all 41
+  focused LineBreaker tests, the exact upstream crash WPT, and the repository
+  webdriver smoke. Current Chromium's WPT runner required `headless_shell`
+  rather than the plan's stale `content_shell` assumption; the plan records the
+  bounded adaptation and restoration of a test-only port remap. Artifact and
+  disposable Facebook acceptance remain under evaluation.
 
 ## Upgrade Cadence
 

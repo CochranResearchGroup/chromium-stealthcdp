@@ -31,8 +31,13 @@ disposable browser lane.
   CL 7992797, removes the invalid `BreakText` ordering DCHECK, preserves the
   restore path, and adds
   `external/wpt/css/css-text/crashtests/line-breaker-overflow-crash.html`.
-- The retained Facebook profile and shared artifact alias are outside this
-  plan's mutation authority.
+- The DCHECK-enabled Chromium 153 candidate, focused LineBreaker suite, exact
+  upstream crash WPT, and repository smoke now pass. The retained Facebook
+  profile remains outside this plan's mutation authority.
+- The operator subsequently authorized refreshing the shared agent-browser
+  workstation payload and installing the validated Linux Chromium candidate
+  into the artifact set agent-browser resolves. The platform-neutral `current`
+  alias remains protected because it currently owns a Windows artifact.
 
 ## Scope
 
@@ -48,8 +53,10 @@ disposable browser lane.
 7. Build a fresh Linux candidate with `dcheck_always_on=true`.
 8. Run the upstream WPT, focused line-breaker tests, and the repository smoke.
 9. Stage and hash-verify the candidate outside the shared `current` alias.
-10. Run an access-plan-first authenticated Facebook comparison using the
-    explicit staged executable and an authorized disposable profile.
+10. Install the verified Linux artifact into agent-browser's shared artifact
+    set without repointing the platform-neutral alias.
+11. Run an access-plan-first authenticated Facebook comparison using the
+    installed candidate and an authorized disposable profile.
 
 ## Non-Goals
 
@@ -59,9 +66,9 @@ disposable browser lane.
   timezone, device, or other fingerprint spoofing.
 - Do not disable DCHECKs globally.
 - Do not mutate the retained Facebook profile.
-- Do not switch a live browser runtime, install the candidate, repoint the
-  shared platform-neutral artifact alias, or retry the downstream Facebook
-  tick without a separate cutover decision.
+- Do not repoint the shared platform-neutral artifact alias or retry the
+  downstream Facebook tick. The operator's later install authorization covers
+  only the validated Linux candidate and agent-browser workstation payload.
 - Do not repair agent-browser crash propagation or profile-routing defects in
   this Chromium repository.
 
@@ -86,9 +93,10 @@ No parallel agents are required for this maintenance-sized repository.
 - State transition: `ready -> active`
 - Authority classification: standing authority for policy installation,
   documentation, source update, patch replay, build, tests, candidate staging,
-  and disposable validation; explicit gate for retained-profile use, shared
-  alias cutover, installation, push, publication, or downstream production
-  retry
+  and disposable validation; operator-granted authority for agent-browser
+  workstation refresh and validated Linux candidate installation; explicit
+  gate remains for retained-profile use, platform-neutral alias cutover, push,
+  publication, or downstream production retry
 - Unmet criteria: all source, build, artifact, and browser acceptance gates
 - Ready unit: freeze upstream and update the source checkout after policy audit
 - Blocked unit: authenticated Facebook comparison until a disposable profile
@@ -129,7 +137,9 @@ No parallel agents are required for this maintenance-sized repository.
   and dedicated candidate artifact root
 - Evidence: GN args, `DCHECK_ALWAYS_ON=1`, WPT and unit results, smoke JSON,
   manifest and SHA-256 verification, unchanged shared alias
-- Terminal condition: a clean, fresh, reproducible candidate is staged
+- Terminal condition: a clean, fresh, reproducible candidate is staged and its
+  verified Linux artifact is available to agent-browser without changing the
+  platform-neutral alias
 
 ### Packet D: browser acceptance
 
@@ -161,8 +171,7 @@ No parallel agents are required for this maintenance-sized repository.
 - Generated toolchain content contains `-DDCHECK_ALWAYS_ON=1`.
 - The exact upstream line-breaker crash WPT passes without a masking
   expectation.
-- Focused `LineBreakerTest.*` coverage passes, or an exact limitation is
-  recorded.
+- All 41 focused `LineBreakerTest.*` tests pass.
 - `scripts/smoke.sh` reports `success: true` and
   `navigator.webdriver=false`.
 
@@ -231,6 +240,18 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
   `odollo-carrier-usps` profile lease. That route was rejected. Browser
   acceptance must instead bind the staged executable explicitly to a custom
   temporary user-data directory and retain detected-profile proof.
+- 2026-08-11: The operator authorized the agent-browser binary/install path.
+  `agent-browser install workstation --apply --json` refreshed the versioned
+  workstation payload; follow-up evidence reports payload `state=installed`,
+  binary provenance match `true`, dashboard runtime `ready`, convergence
+  `converged`, and remote control `ready`. Existing duplicate-profile pressure
+  remains explicitly non-blocking and will not be mutated by this plan.
+- 2026-08-11: A candidate-specific no-launch plan selected custom disposable
+  profile `/tmp/chromium-stealthcdp-facebook-disposable.rVSvSp` and free route
+  `guacamole-rdp-a`, but its service launch command did not carry the explicit
+  build-output executable. No browser was launched. Browser acceptance is
+  deferred until the verified Linux artifact is installed into the manifest
+  set agent-browser resolves.
 - Checkpoint `P0001-C01`: plan version `1`; state `ready -> active`;
   progress `outcome_progress`; evidence: selector bundle `v0.1.15`, 18 adopted
   modules, wired `AGENTS.md`, and passing normal/active planning audits;
@@ -247,3 +268,18 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
   the coupled critical path; authority `in-envelope`; review disposition
   summary `none`; next action: export and commit the one-patch queue, then
   build from clean identities.
+- Checkpoint `P0001-C03`: plan version `1`; state `active -> active`;
+  progress `outcome_progress`; evidence: clean Chromium 153 build with
+  `dcheck_always_on=true` and `-DDCHECK_ALWAYS_ON=1`; Chrome build 56,867 steps
+  in 3h14m34s; test build 10,947 steps in 1h34m29s with zero retries; all 41
+  `LineBreakerTest.*` cases passed; upstream
+  `line-breaker-overflow-crash.html` ran 1/1 as expected with exit 0 and no
+  masking expectation; repository smoke reports `success=true` and
+  `navigator.webdriver=false`; executable SHA-256
+  `17ba663c71256ae0f842c7f22236ba7d4c091d0d6da5f4378d28ea967b38045c`;
+  WPT harness adaptation: current upstream requires `headless_shell` and
+  `chromedriver`, and a reversible local port remap avoided occupied Docker
+  ports 8081/8444 before the source template was restored clean; subagent
+  status `not_spawned`; authority `in-envelope`; review disposition summary
+  `none`; next action: commit this checkpoint, stage and verify the dedicated
+  artifact, then install the Linux artifact for disposable browser acceptance.
