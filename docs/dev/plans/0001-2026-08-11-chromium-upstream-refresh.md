@@ -38,6 +38,10 @@ disposable browser lane.
   workstation payload and installing the validated Linux Chromium candidate
   into the artifact set agent-browser resolves. The platform-neutral `current`
   alias remains protected because it currently owns a Windows artifact.
+- The dedicated candidate is fresh and independently hash-verified, and the
+  same Linux artifact is registered as agent-browser's
+  `stealthcdp_chromium` executable. Browser acceptance remains blocked before
+  launch by remote-view route acquisition timeout `r807103`.
 
 ## Scope
 
@@ -97,10 +101,11 @@ No parallel agents are required for this maintenance-sized repository.
   workstation refresh and validated Linux candidate installation; explicit
   gate remains for retained-profile use, platform-neutral alias cutover, push,
   publication, or downstream production retry
-- Unmet criteria: all source, build, artifact, and browser acceptance gates
+- Unmet criteria: authenticated disposable Facebook browser acceptance only
 - Ready unit: freeze upstream and update the source checkout after policy audit
-- Blocked unit: authenticated Facebook comparison until a disposable profile
-  is available and operator-seeded
+- Blocked unit: authenticated Facebook comparison until agent-browser can
+  assign the ready `guacamole-rdp-a` route to the disposable session, followed
+  by operator seeding if Facebook authentication is absent
 - Delegation: `not_spawned`; the source pin, dependency sync, patch replay,
   queue export, and build provenance are one coupled critical path. An
   independent evaluator may be used once for the final drift-discovery review.
@@ -183,6 +188,10 @@ No parallel agents are required for this maintenance-sized repository.
   executable SHA-256, smoke SHA-256, and clean flags match current state.
 - `scripts/check-freshness.sh` reports `fresh: true` and independent checks
   cover manifest fields that helper does not enforce.
+- The verified Linux artifact is copied into the shared artifact set and both
+  `service.browserBuildManifests.stealthcdp_chromium` and executable ID
+  `stealthcdp-chromium-wsl-promoted` resolve it; the platform-neutral `current`
+  alias remains unchanged.
 
 ### Browser acceptance gate
 
@@ -252,6 +261,29 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
   build-output executable. No browser was launched. Browser acceptance is
   deferred until the verified Linux artifact is installed into the manifest
   set agent-browser resolves.
+- 2026-08-11: Candidate
+  `153.0.8003.0+stealthcdp.86aec912997e` was staged at
+  `../artifacts/chromium-stealthcdp-candidates/upstream-153-b84d5f5c/current`.
+  Freshness reports `fresh=true`; source, upstream, queue, executable, smoke,
+  and patch hashes independently match; both dirty flags are false. Shared
+  `../artifacts/chromium-stealthcdp/current` remained on the prior Windows
+  artifact `150.0.7835.0+stealthcdp.6b6558b55a1d`.
+- 2026-08-11: The verified Linux artifact was copied into
+  `../artifacts/chromium-stealthcdp/` and the two explicit agent-browser WSL
+  bindings were updated. Install doctor then selected Chromium `153.0.8003.0`,
+  executable SHA-256 `17ba663c71256ae0f842c7f22236ba7d4c091d0d6da5f4378d28ea967b38045c`,
+  with valid manifest and passing webdriver smoke. Agent-browser 0.28.0
+  workstation provenance is ready at binary SHA-256
+  `5d76d49db1dd70ef87b541eca6dd7e27fdf965d5feea7e3709e911ed22ff2cad`;
+  remote control reconverged to `ready`.
+- 2026-08-11: Browser launch did not occur. Capability preflight selected the
+  Chromium 153 executable, but the disposable custom profile had no registry
+  compatibility row. More importantly, authoritative route-pool and explicit
+  inline `guacamole-rdp-a` dry runs failed before route assignment with
+  `Operation timed out`. Final job `r807103` has `state=failed`,
+  `routePoolEntryId=guacamole-rdp-a`, and no display allocation or remote-view
+  route. The disposable directory was never launched, retained profiles were
+  not touched, and no Facebook renderer result is claimed.
 - Checkpoint `P0001-C01`: plan version `1`; state `ready -> active`;
   progress `outcome_progress`; evidence: selector bundle `v0.1.15`, 18 adopted
   modules, wired `AGENTS.md`, and passing normal/active planning audits;
@@ -283,3 +315,26 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
   status `not_spawned`; authority `in-envelope`; review disposition summary
   `none`; next action: commit this checkpoint, stage and verify the dedicated
   artifact, then install the Linux artifact for disposable browser acceptance.
+- Checkpoint `P0001-C04`: plan version `1`; state `active -> active`;
+  progress `outcome_progress`; evidence: dedicated artifact
+  `153.0.8003.0+stealthcdp.86aec912997e`, `fresh=true`, executable SHA-256
+  `17ba663c71256ae0f842c7f22236ba7d4c091d0d6da5f4378d28ea967b38045c`,
+  smoke SHA-256
+  `9634a2fd335a207ce81cf003873cb426972544cfd12edfd94401ef8c39668c5f`,
+  patch SHA-256
+  `a5725ea7da291871232f58a4143ece211d3d3d1359708ad94212cba38f47238e`,
+  queue SHA-256
+  `86aec912997eb9193045706555e1099c200abc4c95a7807a2388f8214cd9f69c`,
+  clean source and patchset identities, unchanged platform-neutral alias, and
+  verified agent-browser selection of the installed Linux copy; subagent
+  status `not_spawned`; authority `operator-authorized-install`; review
+  disposition summary `none`; next action: disposable remote-view preflight.
+- Checkpoint `P0001-C05`: plan version `1`; state `active -> blocked_unit`;
+  progress `blocked`; evidence: remote-view doctor `ready`, candidate executable
+  selected, disposable path isolated, but repeated authoritative route dry
+  plans failed before launch; final service job `r807103` timed out with
+  `guacamole-rdp-a` requested and no assigned display/route; subagent status
+  `not_spawned`; authority `retained-profile-denied`; review disposition
+  summary `none`; next action: repair or reconverge agent-browser route
+  acquisition, then repeat the no-launch proof and operator-seed the disposable
+  profile if authentication is required. Plan remains `OPEN`.

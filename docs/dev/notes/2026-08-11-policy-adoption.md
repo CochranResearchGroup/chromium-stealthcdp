@@ -80,8 +80,13 @@ policy lives under `docs/dev/policies/` and is wired through `AGENTS.md`.
   focused LineBreaker tests, the exact upstream crash WPT, and the repository
   webdriver smoke. Current Chromium's WPT runner required `headless_shell`
   rather than the plan's stale `content_shell` assumption; the plan records the
-  bounded adaptation and restoration of a test-only port remap. Artifact and
-  disposable Facebook acceptance remain under evaluation.
+  bounded adaptation and restoration of a test-only port remap.
+- The artifact packet produced a fresh, independently hash-matched dedicated
+  candidate and installed the same Linux artifact into agent-browser's explicit
+  WSL manifest binding without changing the platform-neutral alias. Disposable
+  Facebook acceptance remains open because agent-browser timed out before
+  assigning the ready Guacamole route; no browser launch or retained-profile
+  mutation occurred.
 
 ## Upgrade Cadence
 
