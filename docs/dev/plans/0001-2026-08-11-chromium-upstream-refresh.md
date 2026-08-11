@@ -42,8 +42,10 @@ disposable browser lane.
   same Linux artifact is registered as agent-browser's
   `stealthcdp_chromium` executable. Route reconciliation superseded timeout
   `r807103`: a new disposable browser is now operator-visible on Route B and
-  renders both the non-Facebook control and Facebook home. The remaining gate
-  is operator login in that disposable profile before posts-search acceptance.
+  renders both the non-Facebook control and Facebook home. Three consecutive
+  goal turns have re-read the live page as the Facebook login form; the
+  remaining gate is operator login in that disposable profile before
+  posts-search acceptance.
 
 ## Scope
 
@@ -95,8 +97,8 @@ No parallel agents are required for this maintenance-sized repository.
 
 ## Execution Governance
 
-- Plan version: `1`
-- State transition: `ready -> active`
+- Plan version: `2`
+- State transition: `active -> blocked_unit`
 - Authority classification: standing authority for policy installation,
   documentation, source update, patch replay, build, tests, candidate staging,
   and disposable validation; operator-granted authority for agent-browser
@@ -104,7 +106,8 @@ No parallel agents are required for this maintenance-sized repository.
   gate remains for retained-profile use, platform-neutral alias cutover, push,
   publication, or downstream production retry
 - Unmet criteria: authenticated disposable Facebook browser acceptance only
-- Ready unit: freeze upstream and update the source checkout after policy audit
+- Ready unit: after operator login, run the filtered `OpenAI` posts-search
+  workload in the already-open disposable browser and collect crash evidence
 - Blocked unit: authenticated Facebook posts-search comparison until the
   operator signs in through the open Route B handoff for disposable runtime
   profile `chromium-153-facebook-acceptance-20260811`
@@ -368,3 +371,24 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
   summary `none`; next action: operator logs into Facebook in the open
   disposable Route B browser, then the primary agent runs the required posts
   search and records renderer/crash evidence. Plan remains `OPEN`.
+- 2026-08-11: Two later live readbacks retained PID `20044`, Facebook title and
+  URL, target `CFF7BC178ED9787A7C7D884C63B77BB3`, and
+  `navigator.webdriver === false`, but accessibility snapshots still exposed
+  only `Email or mobile number`, `Password`, and `Log In`. No credentials,
+  cookies, retained profile data, or private state were copied or changed.
+  The post-login acceptance recipe is the provider's exact filtered workload,
+  `https://m.facebook.com/search/posts/?q=OpenAI&filters=eyJyZWNlbnRfcG9zdHM6MCI6IntcIm5hbWVcIjpcInJlY2VudF9wb3N0c1wiLFwiYXJnc1wiOlwiXCJ9In0%3D`,
+  followed by bounded renderer, lifecycle, stderr, and process checks; the
+  unfiltered `OpenAI` posts route is a comparison only if the filtered route
+  does not supply decisive evidence.
+- Checkpoint `P0001-C07`: plan version `2`; state `active -> blocked_unit`;
+  progress `blocked`; evidence: the installed Chromium 153 browser remains
+  healthy and operator-visible on Route B, exact executable/PID and webdriver
+  proof remain stable, and the third consecutive goal-turn snapshot still
+  shows an unauthenticated Facebook login form; subagent status `not_spawned`;
+  authority `disposable-profile-only`; review disposition summary
+  `blocking=1` operator-seeded Facebook authentication, `needs_evidence=1`
+  authenticated posts-search renderer acceptance, `rejected=2` retained-profile
+  copying and credential automation; next action: the operator signs in at
+  `https://agent-browser.ecochran.dyndns.org/guacamole/#/client/MgBjAHBvc3RncmVzcWw=`,
+  leaves the browser open, and resumes this goal. Plan remains `OPEN`.
