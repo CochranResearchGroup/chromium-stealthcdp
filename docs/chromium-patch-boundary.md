@@ -23,6 +23,22 @@ It changes `Navigator::webdriver()` so external websites do not receive the
 explicit automation signal from headless, CDP pipe, `remote-debugging-port=0`,
 `enable-automation`, or CDP automation override paths.
 
+## Upstream Compatibility Repairs
+
+The Facebook posts-search crash diagnosed on Chromium 150 does not require a
+downstream patch on the current base. Chromium CL 7992797, commit
+`de949449a7fc4df4551492407a65fc3d63015c42` ("[line-break] Relax the DCHECK for
+BreakText results"), removed an invalid `LineBreaker` ordering DCHECK while
+preserving the existing failed-break restoration path. It also added
+`external/wpt/css/css-text/crashtests/line-breaker-overflow-crash.html`.
+
+Chromium `153.0.8003.0` at
+`b84d5f5c55a43d2f7778cfbc1996d3b835296d1c` contains that accepted upstream
+repair. Keep the downstream queue at one patch; do not add a duplicate
+line-breaker backport while this repair and its regression test remain present.
+
+Upstream review: <https://chromium-review.googlesource.com/c/chromium/src/+/7992797>
+
 ## Chromium-Level Work To Consider
 
 Only request additional Chromium patches after a source-backed assessment shows

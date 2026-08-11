@@ -1,4 +1,4 @@
-From 24ecda02e97db6fa730a7ccf8747776a4d21e4b9 Mon Sep 17 00:00:00 2001
+From 6e2a5bb35b050375e5748deb72479cf851950064 Mon Sep 17 00:00:00 2001
 From: Eric W Cochran <ecochran76@ewc2.cbe.iastate.edu>
 Date: Mon, 11 May 2026 17:48:05 -0500
 Subject: [PATCH] Make navigator.webdriver non-advertising

@@ -22,9 +22,11 @@ disposable browser lane.
   `24ecda02e97db6fa730a7ccf8747776a4d21e4b9`, based on
   `d421c3af8268e2e6227b7fe4461183e69b64bc61`.
 - The queue contains only `0001-Make-navigator.webdriver-non-advertising.patch`.
-- At planning time, the current Chromium mirror reported `main` at
-  `9e560469d3914112f3c93079885fd272e3bf22cc`, version `153.0.8003.0`.
-  Execution must re-resolve and freeze the upstream SHA before the update.
+- At execution time, Chromium `main` was re-resolved and frozen at
+  `b84d5f5c55a43d2f7778cfbc1996d3b835296d1c`, version `153.0.8003.0`.
+- Chromium source is now on `ec/chromium-stealthcdp-b84d5f5c`; dependencies
+  are synchronized and Linux hooks passed. The replayed downstream commit is
+  `6e2a5bb35b050375e5748deb72479cf851950064`.
 - Upstream commit `de949449a7fc4df4551492407a65fc3d63015c42`, Chromium
   CL 7992797, removes the invalid `BreakText` ordering DCHECK, preserves the
   restore path, and adds
@@ -229,3 +231,13 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
   subagent status `not_spawned` for coupled critical path; authority
   `in-envelope`; review disposition summary `none`; next action: goal-only
   policy audit, then freeze upstream.
+- Checkpoint `P0001-C02`: plan version `1`; state `active -> active`;
+  progress `outcome_progress`; evidence: execution-time upstream
+  `b84d5f5c55a43d2f7778cfbc1996d3b835296d1c` / `153.0.8003.0`, clean
+  synchronized checkout after Linux hooks, CL 7992797 recovery logic and WPT
+  present, old fatal DCHECK absent, replay commit
+  `6e2a5bb35b050375e5748deb72479cf851950064`, exact one-to-one `git range-diff`,
+  and only `navigator.cc` changed downstream; subagent status `not_spawned` for
+  the coupled critical path; authority `in-envelope`; review disposition
+  summary `none`; next action: export and commit the one-patch queue, then
+  build from clean identities.

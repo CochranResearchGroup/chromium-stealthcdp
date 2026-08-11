@@ -72,8 +72,10 @@ policy lives under `docs/dev/policies/` and is wired through `AGENTS.md`.
 - The active goal caused a second deterministic selector pass to add goal,
   delegation, parallel-plan, and continuity modules. Concrete local bounds were
   added to the goal-execution policy before source work began.
-- Behavioral success remains under evaluation until Plan 0001 completes its
-  source, artifact, and browser acceptance gates.
+- The first governed source packet preserved both worktrees, froze an exact
+  upstream SHA, bounded dependency-sync retries, separated a Linux hook repair
+  from the exhausted sync retry budget, and recorded source-backed checkpoint
+  evidence. Artifact and browser acceptance behavior remains under evaluation.
 
 ## Upgrade Cadence
 

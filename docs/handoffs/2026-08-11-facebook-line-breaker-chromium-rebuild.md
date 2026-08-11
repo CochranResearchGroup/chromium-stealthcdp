@@ -2,6 +2,11 @@
 
 Date: 2026-08-11
 
+Status: superseded for execution by
+`docs/dev/plans/0001-2026-08-11-chromium-upstream-refresh.md`. The current
+Chromium base contains the accepted upstream repair (CL 7992797), so the
+recommended second downstream patch below was not created.
+
 ## Objective
 
 Produce a new Linux `chromium-stealthcdp` candidate that no longer aborts at
