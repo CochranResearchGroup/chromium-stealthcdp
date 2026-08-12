@@ -42,10 +42,17 @@ disposable browser lane.
   same Linux artifact is registered as agent-browser's
   `stealthcdp_chromium` executable. Route reconciliation superseded timeout
   `r807103`: a new disposable browser is now operator-visible on Route B and
-  renders both the non-Facebook control and Facebook home. Three consecutive
-  goal turns have re-read the live page as the Facebook login form; the
-  remaining gate is operator login in that disposable profile before
-  posts-search acceptance.
+  renders both the non-Facebook control and Facebook home. That disposable
+  profile remained unauthenticated after three live readbacks.
+- The operator then authorized one bounded retry through the already
+  authenticated retained `last30days-facebook` profile without profile-data
+  mutation. Exact access planning, `/proc` identity, and capability preflight
+  bound PID 39672 to the installed Chromium 153 artifact. The filtered search
+  replaced the former `line_breaker.cc:4102` failure with a new renderer FATAL
+  at `inline_item_result.cc:55`: `Length() ==
+  shape_result->NumCharacters()` failed `222 vs. 3`. The failed target was
+  released while the retained browser survived, and browser acceptance remains
+  blocked on this new shaped-text consistency defect.
 
 ## Scope
 
@@ -97,20 +104,21 @@ No parallel agents are required for this maintenance-sized repository.
 
 ## Execution Governance
 
-- Plan version: `3`
-- State transition: `blocked_unit -> blocked_unit`
+- Plan version: `4`
+- State transition: `blocked_unit -> failed_acceptance`
 - Authority classification: standing authority for policy installation,
   documentation, source update, patch replay, build, tests, candidate staging,
   and disposable validation; operator-granted authority for agent-browser
   workstation refresh and validated Linux candidate installation; explicit
   gate remains for retained-profile use, platform-neutral alias cutover, push,
   publication, or downstream production retry
-- Unmet criteria: authenticated disposable Facebook browser acceptance only
-- Ready unit: after operator login, run the filtered `OpenAI` posts-search
-  workload in the already-open disposable browser and collect crash evidence
-- Blocked unit: authenticated Facebook posts-search comparison until the
-  operator signs in through the open Route B handoff for disposable runtime
-  profile `chromium-153-facebook-acceptance-20260811`
+- Unmet criteria: authenticated Facebook browser acceptance without a renderer
+  abort
+- Ready unit: reproduce and repair the `InlineItemResult` shape-length
+  mismatch with DCHECKs retained, then rebuild and repeat focused source tests
+- Blocked unit: any further authenticated Facebook posts-search comparison
+  until a repaired candidate passes source tests and agent-browser propagates
+  renderer-target crashes instead of reporting only a probe timeout
 - Delegation: `not_spawned`; the source pin, dependency sync, patch replay,
   queue export, and build provenance are one coupled critical path. An
   independent evaluator may be used once for the final drift-discovery review.
@@ -412,3 +420,43 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
   `rejected=2` retained-profile copying and credential automation; next action:
   the operator signs in through the durable `/remote-view/` handoff, leaves
   the browser open, and resumes this goal. Plan remains `OPEN`.
+- 2026-08-11: One operator-authorized authenticated comparison reused the exact
+  retained profile/session `last30days-facebook` with installed Chromium
+  `153.0.8003.0+stealthcdp.86aec912997e`. Live PID 39672 resolved to the
+  artifact executable with SHA-256
+  `17ba663c71256ae0f842c7f22236ba7d4c091d0d6da5f4378d28ea967b38045c`.
+  Tab-open job
+  `http-service-request-tab_new-c1c60416-7b52-4662-968c-6835af036151`
+  reached Facebook title `(20+) OpenAI - Search Results | Facebook` at target
+  `5F9E42559ACE9321F29CFF6081924676`; exact-target probe job
+  `http-service-request-probe-530f5410-6761-4c18-b30e-556fbc704e30` then timed
+  out after 20 seconds.
+- 2026-08-11: Retained stderr
+  `/home/ecochran76/.agent-browser/tmp/chrome-launches/chrome-39672-1786492827405.stderr.log`
+  records the corresponding local `20:46:12` FATAL at
+  `third_party/blink/renderer/core/layout/inline/inline_item_result.cc:55`:
+  `DCHECK failed: Length() == shape_result->NumCharacters() (222 vs. 3)`.
+  The stack reaches `InlineItemResult::CheckConsistency()` from
+  `LineBreaker::HandleOverflow()` after `BreakText()`. The former
+  `line_breaker.cc:4102` assertion is absent from this Chromium 153 source, so
+  CL 7992797 repaired the old ordering invariant but not this next shape-result
+  consistency failure.
+- 2026-08-11: Agent-browser emitted only the probe timeout, not an immediate
+  target-crash lifecycle event. Cleanup job
+  `http-service-request-tab_handle_release-3df5f37a-af22-4d2a-b033-590c1c731727`
+  closed only the failed target and preserved PID 39672, its retained profile,
+  session route, and unrelated tabs. No profile data, provider, tick, cache, or
+  shared alias was mutated.
+- Checkpoint `P0001-C09`: plan version `4`; state
+  `blocked_unit -> failed_acceptance`; progress `blocker_reduction`; evidence:
+  authenticated retained-profile routing and installed Chromium identity are
+  proven, the old ordering DCHECK is absent, and a new reproducible
+  `InlineItemResult` mismatch is bound to exact process, target, jobs, and
+  stderr; subagent status `not_spawned`; authority
+  `operator-authorized-retained-profile-retry-without-profile-mutation`; review
+  disposition summary `blocking=2` shaped-text consistency crash and missing
+  target-crash propagation, `needs_evidence=1` authenticated search acceptance,
+  `rejected=2` disabling DCHECKs and running another live retry before repair;
+  next action: repair the new invariant with DCHECKs retained, rebuild, and
+  separately repair agent-browser crash propagation before requesting another
+  authenticated acceptance attempt. Plan remains `OPEN`.
