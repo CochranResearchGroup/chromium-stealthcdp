@@ -1,0 +1,130 @@
+From 778b60e96df92414e75d0fb241b108ba1da452db Mon Sep 17 00:00:00 2001
+From: Eric W Cochran <ecochran76@ewc2.cbe.iastate.edu>
+Date: Thu, 13 Aug 2026 17:06:02 -0500
+Subject: [PATCH 2/2] Fix stale shape result during line overflow
+
+---
+ .../core/layout/inline/line_breaker.cc        | 10 ++++
+ .../core/layout/inline/line_breaker.h         | 10 ++++
+ .../core/layout/inline/line_breaker_test.cc   | 46 +++++++++++++++++++
+ 3 files changed, 66 insertions(+)
+
+diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker.cc b/third_party/blink/renderer/core/layout/inline/line_breaker.cc
+index a7d647318c..ec9d94fdfe 100644
+--- a/third_party/blink/renderer/core/layout/inline/line_breaker.cc
++++ b/third_party/blink/renderer/core/layout/inline/line_breaker.cc
+@@ -1689,9 +1689,19 @@ LineBreaker::BreakResult LineBreaker::BreakText(
+     // rewinded. Making this item long enough to overflow is enough.
+     if (!shape_result) {
+       DCHECK(breaker.NoResultIfOverflow());
++      if (before_overflow_result_expansion_for_testing_) [[unlikely]] {
++        before_overflow_result_expansion_for_testing_(item_result, item);
++      }
+       item_result->inline_size = available_width_with_hyphens + 1;
+       item_result->text_offset.end = item.EndOffset();
++      // `item_result` can be reused while rewinding overflow. Its previous
++      // shape only covers the old text range and is invalid after widening the
++      // result to the end of the item.
++      item_result->shape_result = nullptr;
+       item_result->text_offset.AssertNotEmpty();
++#if DCHECK_IS_ON()
++      item_result->CheckConsistency(true);
++#endif
+       return kOverflow;
+     }
+     DCHECK_EQ(shape_result->NumCharacters(),
+diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker.h b/third_party/blink/renderer/core/layout/inline/line_breaker.h
+index 507c26b5da..6e8a391dfd 100644
+--- a/third_party/blink/renderer/core/layout/inline/line_breaker.h
++++ b/third_party/blink/renderer/core/layout/inline/line_breaker.h
+@@ -117,6 +117,13 @@ class CORE_EXPORT LineBreaker {
+     return trailing_whitespace_;
+   }
+ 
++  using BeforeOverflowResultExpansionForTesting = void (*)(InlineItemResult*,
++                                                           const InlineItem&);
++  void SetBeforeOverflowResultExpansionForTesting(
++      BeforeOverflowResultExpansionForTesting callback) {
++    before_overflow_result_expansion_for_testing_ = callback;
++  }
++
+   // Find break candidates in the `item_result` and append to `context`. See
+   // `LineBreakCandidate` and `LineBreakCandidateContext` for more details.
+   void AppendCandidates(const InlineItemResult& item_result,
+@@ -404,6 +411,9 @@ class CORE_EXPORT LineBreaker {
+ 
+   bool disable_trailing_whitespace_collapsing_ = false;
+ 
++  BeforeOverflowResultExpansionForTesting
++      before_overflow_result_expansion_for_testing_ = nullptr;
++
+   // True when the line should be non-empty if |IsLastLine|..
+   bool force_non_empty_if_last_line_ = false;
+ 
+diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc b/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
+index b85384e991..e314caa90f 100644
+--- a/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
++++ b/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
+@@ -140,6 +140,16 @@ class LineBreakerTest : public RenderingTest {
+ 
+ namespace {
+ 
++void SeedReusedShortShapeResult(InlineItemResult* item_result,
++                                const InlineItem& item) {
++  const unsigned start_offset = item_result->StartOffset();
++  const unsigned end_offset = start_offset + 3;
++  CHECK_LT(end_offset, item.EndOffset());
++  item_result->text_offset.end = end_offset;
++  item_result->shape_result =
++      ShapeResultView::Create(item.TextShapeResult(), start_offset, end_offset);
++}
++
+ TEST_F(LineBreakerTest, FitWithEpsilon) {
+   LoadAhem();
+   InlineNode node = CreateInlineNode(R"HTML(
+@@ -419,6 +429,42 @@ TEST_F(LineBreakerTest, OverflowMargin) {
+   EXPECT_EQ("789", lines[2].first);
+ }
+ 
++// Regression test for an InlineItemResult retaining the shape from an earlier
++// break when overflow handling reuses and widens the result.
++TEST_F(LineBreakerTest, BreakWordWithReusedShapeResult) {
++  LoadAhem();
++  InlineNode node = CreateInlineNode(R"HTML(
++    <!DOCTYPE html>
++    <style>
++    #container {
++      font: 10px/1 Ahem;
++      overflow-wrap: break-word;
++    }
++    span {
++      margin-right: 10px;
++    }
++    </style>
++    <div id=container><span>123456789012345678901234567890123456789012345678901234567890</span></div>
++  )HTML");
++
++  node.PrepareLayoutIfNeeded();
++  const LayoutUnit available_width(30);
++  ConstraintSpace space = ConstraintSpaceForAvailableSize(available_width);
++  ExclusionSpace exclusion_space;
++  LeadingFloats leading_floats;
++  LineLayoutOpportunity line_opportunity(available_width);
++  LineBreaker line_breaker(node, LineBreakerMode::kContent, space,
++                           line_opportunity, leading_floats,
++                           /* break_token */ nullptr,
++                           /* column_spanner_path */ nullptr, &exclusion_space);
++  line_breaker.SetBeforeOverflowResultExpansionForTesting(
++      &SeedReusedShortShapeResult);
++
++  LineInfo line_info;
++  line_breaker.NextLine(&line_info);
++  EXPECT_EQ("123", ToString(line_info.Results(), node));
++}
++
+ TEST_F(LineBreakerTest, OverflowAfterSpacesAcrossElements) {
+   LoadAhem();
+   InlineNode node = CreateInlineNode(R"HTML(
+-- 
+2.43.0
+

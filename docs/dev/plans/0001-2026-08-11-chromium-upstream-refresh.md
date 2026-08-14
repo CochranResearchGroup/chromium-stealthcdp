@@ -21,7 +21,8 @@ disposable browser lane.
 - Chromium source began clean on `ec/chromium-stealthcdp` at
   `24ecda02e97db6fa730a7ccf8747776a4d21e4b9`, based on
   `d421c3af8268e2e6227b7fe4461183e69b64bc61`.
-- The queue contains only `0001-Make-navigator.webdriver-non-advertising.patch`.
+- The queue now contains the original webdriver patch plus the narrow
+  `0002-Fix-stale-shape-result-during-line-overflow.patch` follow-on repair.
 - At execution time, Chromium `main` was re-resolved and frozen at
   `b84d5f5c55a43d2f7778cfbc1996d3b835296d1c`, version `153.0.8003.0`.
 - Chromium source is now on `ec/chromium-stealthcdp-b84d5f5c`; dependencies
@@ -34,6 +35,11 @@ disposable browser lane.
 - The DCHECK-enabled Chromium 153 candidate, focused LineBreaker suite, exact
   upstream crash WPT, and repository smoke now pass. The retained Facebook
   profile remains outside this plan's mutation authority.
+- The follow-on Blink repair is committed in Chromium source as
+  `778b60e96df92414e75d0fb241b108ba1da452db`. A deterministic regression test
+  proves the stale-shape invariant fails without the repair (`60 vs. 3`) and
+  passes with the shape cleared after the result range is widened. All 42
+  `LineBreakerTest.*` cases and the exact committed Chrome build pass.
 - The operator subsequently authorized refreshing the shared agent-browser
   workstation payload and installing the validated Linux Chromium candidate
   into the artifact set agent-browser resolves. The platform-neutral `current`
@@ -75,8 +81,9 @@ disposable browser lane.
 
 ## Non-Goals
 
-- Do not add a custom line-breaker patch when the pinned upstream already
-  contains the accepted Chromium repair.
+- Do not weaken or replace the pinned upstream line-breaker repair; carry only
+  the narrow follow-on stale-shape repair proven necessary by the authenticated
+  workload.
 - Do not broaden the stealth patch into canvas, WebGL, audio, font, locale,
   timezone, device, or other fingerprint spoofing.
 - Do not disable DCHECKs globally.
@@ -104,8 +111,8 @@ No parallel agents are required for this maintenance-sized repository.
 
 ## Execution Governance
 
-- Plan version: `4`
-- State transition: `blocked_unit -> failed_acceptance`
+- Plan version: `5`
+- State transition: `failed_acceptance -> active`
 - Authority classification: standing authority for policy installation,
   documentation, source update, patch replay, build, tests, candidate staging,
   and disposable validation; operator-granted authority for agent-browser
@@ -114,11 +121,11 @@ No parallel agents are required for this maintenance-sized repository.
   publication, or downstream production retry
 - Unmet criteria: authenticated Facebook browser acceptance without a renderer
   abort
-- Ready unit: reproduce and repair the `InlineItemResult` shape-length
-  mismatch with DCHECKs retained, then rebuild and repeat focused source tests
+- Ready unit: stage and independently verify the repaired candidate without
+  changing the platform-neutral shared alias
 - Blocked unit: any further authenticated Facebook posts-search comparison
-  until a repaired candidate passes source tests and agent-browser propagates
-  renderer-target crashes instead of reporting only a probe timeout
+  until the repaired candidate is staged and the retained-profile and
+  crash-propagation gates are explicitly resolved
 - Delegation: `not_spawned`; the source pin, dependency sync, patch replay,
   queue export, and build provenance are one coupled critical path. An
   independent evaluator may be used once for the final drift-discovery review.
@@ -189,7 +196,7 @@ No parallel agents are required for this maintenance-sized repository.
 - Generated toolchain content contains `-DDCHECK_ALWAYS_ON=1`.
 - The exact upstream line-breaker crash WPT passes without a masking
   expectation.
-- All 41 focused `LineBreakerTest.*` tests pass.
+- All 42 focused `LineBreakerTest.*` tests pass.
 - `scripts/smoke.sh` reports `success: true` and
   `navigator.webdriver=false`.
 
@@ -224,7 +231,8 @@ No parallel agents are required for this maintenance-sized repository.
 - Policy bundle `v0.1.15` is installed, wired, and audited.
 - A current Chromium `main` revision is pinned reproducibly.
 - CL 7992797 behavior and its WPT are present in that pinned base.
-- The downstream patch queue contains exactly one reviewed webdriver patch.
+- The downstream patch queue contains the reviewed webdriver patch and the
+  narrow reviewed LineBreaker follow-on repair.
 - DCHECK-enabled focused tests and repository smoke pass.
 - A clean candidate artifact passes manifest and freshness verification outside
   the shared alias.
@@ -460,3 +468,27 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
   next action: repair the new invariant with DCHECKs retained, rebuild, and
   separately repair agent-browser crash propagation before requesting another
   authenticated acceptance attempt. Plan remains `OPEN`.
+- 2026-08-14: A DCHECK-only test seam now deterministically seeds a reused
+  three-character `ShapeResultView` immediately before the overflow result is
+  widened. With the production clear removed, the focused test crashes at
+  `inline_item_result.cc:55` with `Length() ==
+  shape_result->NumCharacters()` failed `(60 vs. 3)`; restoring
+  `item_result->shape_result = nullptr` makes the same test pass without
+  weakening the invariant.
+- 2026-08-14: Chromium source commit
+  `778b60e96df92414e75d0fb241b108ba1da452db` is clean and formatted. All 42
+  `LineBreakerTest.*` cases pass from the exact committed tree, and the
+  DCHECK-enabled `chrome` target completed with final `LINK ./chrome`. Builds
+  used vendored Ninja with at most six jobs; the exact-tree Blink rebuild
+  retained more than 35 GiB available memory and did not consume additional
+  swap.
+- Checkpoint `P0001-C10`: plan version `5`; state
+  `failed_acceptance -> active`; progress `outcome_progress`; evidence:
+  deterministic red/green invariant reproduction, source commit
+  `778b60e96df92414e75d0fb241b108ba1da452db`, 42/42 focused tests, clean
+  DCHECK Chrome link, and bounded WSL resource observations; subagent status
+  `not_spawned` for the serialized critical path; authority `in-envelope`;
+  review disposition summary `none`; next action: commit the two-patch queue
+  and checkpoint, then smoke, stage, and hash-verify a dedicated repaired
+  candidate without changing the shared platform-neutral alias. Plan remains
+  `OPEN`.
