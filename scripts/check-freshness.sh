@@ -108,7 +108,7 @@ function patchQueueSha(dir) {
 }
 
 function patchQueueShaFromList(file) {
-  const lines = fs.readFileSync(file, 'utf8')
+  const entries = fs.readFileSync(file, 'utf8')
     .split(/\r?\n/)
     .filter(Boolean)
     .map((line) => {
@@ -116,10 +116,14 @@ function patchQueueShaFromList(file) {
       if (!match) {
         fail(3, `invalid patch checksum line: ${line}`, { file });
       }
-      return `${match[1].toLowerCase()}  ${path.basename(match[2])}\n`;
-    })
-    .sort();
-  return sha256Text(lines.join(''));
+      return {
+        sha256: match[1].toLowerCase(),
+        name: path.basename(match[2]),
+      };
+    });
+  entries.sort((a, b) => a.name.localeCompare(b.name));
+  return sha256Text(
+    entries.map(({ sha256, name }) => `${sha256}  ${name}\n`).join(''));
 }
 
 function fail(code, message, extra = {}) {

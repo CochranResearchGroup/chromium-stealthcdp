@@ -40,6 +40,10 @@ disposable browser lane.
   proves the stale-shape invariant fails without the repair (`60 vs. 3`) and
   passes with the shape cleared after the result range is widened. All 42
   `LineBreakerTest.*` cases and the exact committed Chrome build pass.
+- Repaired candidate `153.0.8003.0+stealthcdp.02d1c35532eb` is staged under
+  the dedicated `linebreaker-778b60e96d` candidate root. Freshness and an
+  independent staged-binary smoke pass; the shared platform-neutral `current`
+  alias remains on the prior Windows artifact.
 - The operator subsequently authorized refreshing the shared agent-browser
   workstation payload and installing the validated Linux Chromium candidate
   into the artifact set agent-browser resolves. The platform-neutral `current`
@@ -111,8 +115,8 @@ No parallel agents are required for this maintenance-sized repository.
 
 ## Execution Governance
 
-- Plan version: `5`
-- State transition: `failed_acceptance -> active`
+- Plan version: `6`
+- State transition: `active -> blocked_unit`
 - Authority classification: standing authority for policy installation,
   documentation, source update, patch replay, build, tests, candidate staging,
   and disposable validation; operator-granted authority for agent-browser
@@ -121,11 +125,12 @@ No parallel agents are required for this maintenance-sized repository.
   publication, or downstream production retry
 - Unmet criteria: authenticated Facebook browser acceptance without a renderer
   abort
-- Ready unit: stage and independently verify the repaired candidate without
-  changing the platform-neutral shared alias
+- Ready unit: after explicit authorization, install the exact verified Linux
+  candidate into agent-browser's manifest set without changing the
+  platform-neutral alias
 - Blocked unit: any further authenticated Facebook posts-search comparison
-  until the repaired candidate is staged and the retained-profile and
-  crash-propagation gates are explicitly resolved
+  until the installation, retained-profile, and crash-propagation gates are
+  explicitly resolved
 - Delegation: `not_spawned`; the source pin, dependency sync, patch replay,
   queue export, and build provenance are one coupled critical path. An
   independent evaluator may be used once for the final drift-discovery review.
@@ -492,3 +497,36 @@ the staged candidate is reported as source-validated but not Facebook-accepted.
   and checkpoint, then smoke, stage, and hash-verify a dedicated repaired
   candidate without changing the shared platform-neutral alias. Plan remains
   `OPEN`.
+- 2026-08-14: The two-patch queue was committed as
+  `9f8084c151aab38c62b72d0830ebec0a27562796`; stable patch IDs match source
+  commits `6e2a5bb35b050375e5748deb72479cf851950064` and
+  `778b60e96df92414e75d0fb241b108ba1da452db`. Local smoke passed with
+  `navigator.webdriver=false` and executable SHA-256
+  `75aad493dc70e9f2529985e842bedf5b34a325fbf455fb6670c1b8abecbaf3de`.
+- 2026-08-14: Repaired candidate
+  `153.0.8003.0+stealthcdp.02d1c35532eb` was staged at
+  `../artifacts/chromium-stealthcdp-candidates/linebreaker-778b60e96d/current`.
+  Its manifest binds source `778b60e96df92414e75d0fb241b108ba1da452db`,
+  patchset `9f8084c151aab38c62b72d0830ebec0a27562796`, queue SHA-256
+  `02d1c35532eba8d4eaf18a043b8db1a8a8f47b0374c830378444263bda37fd84`,
+  executable SHA-256
+  `75aad493dc70e9f2529985e842bedf5b34a325fbf455fb6670c1b8abecbaf3de`,
+  and smoke SHA-256
+  `70a1e2b2be72dbc406b78a3980430e068e9928ae54f7f739bc073873ff1e48a6`;
+  both dirty flags are false. Independent staged-binary verification passed.
+- 2026-08-14: Adding a second patch exposed a deterministic freshness-helper
+  bug: promotion hashes checksum rows by filename, while the checker sorted
+  rows by hash. `scripts/check-freshness.sh` now normalizes and sorts entries
+  by patch filename; the repaired candidate reports `fresh=true`. The shared
+  platform-neutral alias still resolves to Windows artifact
+  `150.0.7835.0+stealthcdp.6b6558b55a1d`.
+- Checkpoint `P0001-C11`: plan version `6`; state
+  `active -> blocked_unit`; progress `outcome_progress`; evidence: exact
+  two-patch reproduction, passing local and staged webdriver smoke, complete
+  manifest/hash readback, `fresh=true`, and unchanged shared alias; subagent
+  status `not_spawned` for the serialized critical path; authority
+  `in-envelope-candidate-staging`; review disposition summary `blocking=1`
+  explicit agent-browser installation and retained-profile acceptance gate;
+  next action: obtain authorization to install the exact verified Linux
+  candidate without alias cutover, then resolve crash propagation before one
+  bounded authenticated acceptance retry. Plan remains `OPEN`.
