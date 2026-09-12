@@ -1,6 +1,6 @@
 # Plan 0002: Production-stable Chromium build with developer-port masking
 
-State: OPEN
+State: CLOSED
 
 Date: 2026-09-12
 
@@ -28,6 +28,11 @@ used.
 - Patch 0002 is a prior Blink crash repair. It will be replayed only if the
   stable source does not already contain an equivalent fix and the patch still
   applies cleanly and passes its focused regression test.
+- The production candidate is built, validated, and staged at
+  `../artifacts/chromium-stealthcdp-candidates/stable-153-production-507c6ee3/153.0.8010.36+stealthcdp.8f0f14239da1`.
+- The dedicated candidate alias targets that artifact. The shared
+  platform-neutral alias remains unchanged at
+  `../artifacts/chromium-stealthcdp/150.0.7835.0+stealthcdp.6b6558b55a1d`.
 
 ## Scope
 
@@ -70,14 +75,13 @@ and evidence-bound.
 
 ## Execution Governance
 
-- Plan version: `3`
-- State transition: `ready -> active`
+- Plan version: `4`
+- State transition: `active -> closed`
 - Authority classification: standing authority for source refresh, patch
   replay/reconciliation, repo documentation, build, tests, smoke, and staging
   under a dedicated candidate root
-- Unmet criteria: Stable pin, clean replay, build, focused validation, smoke,
-  staged artifact, and freshness verification
-- Ready unit: fetch and synchronize the exact Stable source revision
+- Unmet criteria: none
+- Ready unit: none; acceptance criteria are satisfied
 - Blocked units: installation, shared-alias cutover, publication, push, retained
   profile use, or downstream production execution
 - Delegation: `not_spawned`; one coupled critical path and an explicit
@@ -166,6 +170,23 @@ with the exact next action or blocker.
   ephemeral remote-debugging port: CDP was reachable and page JavaScript
   reported `navigator.webdriver=false`. The smoke receipt is
   `/tmp/chromium-stealthcdp-smoke-stable-153-production.json`.
+- 2026-09-12: The official-config `blink_unittests` target built successfully
+  in 1h15m25s (13,277 steps, zero failed actions). The exact
+  `LineBreakerTest.BreakWordWithReusedShapeResult` regression passed, followed
+  by all 42 `LineBreakerTest.*` cases passing.
+- 2026-09-12: Initial candidate staging verification produced
+  `153.0.8010.36+stealthcdp.8f0f14239da1`. Freshness reported `fresh: true` and
+  bound Chromium source `d417aadf10fc848a686badd2b074649cb1da971c`, upstream
+  `507c6ee3e2f3b2ca0e660547e5b9ea4820c67f4c`, patchset
+  pre-closeout checkpoint `e4b45b75c2df23b5f939bec863678fa63b175df5`, and patch queue SHA-256
+  `8f0f14239da13ec8f0704a6c9f33bcb8b9dfd10a9ae1ce26d03fed9ed51cecd8`.
+  Independent hashes matched the manifest: executable
+  `70bb98cb3aea3dd5dabbd9ebd0420fab93949d7566c119dcd4ab1738947cb078`
+  and smoke receipt
+  `f733b77238471bc85d764bab9aafda5c88e4c482828cd834915be976d75846a4`.
+  The shared platform-neutral alias was unchanged. Final staging follows this
+  closeout commit so its manifest can bind the closed-plan repository identity
+  without a post-staging documentation mutation.
 - Checkpoint `P0002-C01`: plan version `1`; state `ready -> active`; progress
   `outcome_progress`; evidence: clean starting identities, current Stable
   release selection, and explicit masking contract; subagent status
@@ -183,3 +204,10 @@ with the exact next action or blocker.
   `not_spawned`; authority `in-envelope`; review disposition summary `corrected
   stale DCHECK hard-stop wording`; next action: finish and run the retained
   Blink repair regression, then commit this checkpoint before artifact staging.
+- Checkpoint `P0002-C04`: plan version `4`; state `active -> closed`; progress
+  `outcome_complete`; evidence: exact regression and all 42 surrounding tests
+  passed, dedicated candidate staged, independent hashes matched, freshness
+  reported true, and shared alias remained unchanged; subagent status
+  `not_spawned`; authority `in-envelope`; review disposition summary `none`;
+  next action: none within standing authority; installation or shared-alias
+  cutover requires an explicit operator decision.
