@@ -37,7 +37,8 @@ used.
 4. Replay and review the downstream masking patch.
 5. Reconcile the Blink repair against Stable: retain it only when still needed.
 6. Refresh the pinned revision and exported patch queue in this repository.
-7. Build `chrome` in a new release-mode output directory with DCHECKs retained.
+7. Build `chrome` in a new official-style release output directory without
+   forcing diagnostic DCHECKs into the runtime.
 8. Run focused tests for every retained source repair and run repository smoke.
 9. Stage a reproducible candidate under a dedicated candidate artifact root.
 10. Verify manifest, hashes, clean identities, and developer-port masking.
@@ -69,7 +70,7 @@ and evidence-bound.
 
 ## Execution Governance
 
-- Plan version: `1`
+- Plan version: `2`
 - State transition: `ready -> active`
 - Authority classification: standing authority for source refresh, patch
   replay/reconciliation, repo documentation, build, tests, smoke, and staging
@@ -100,8 +101,9 @@ and evidence-bound.
 
 ### Build and runtime
 
-- A new output directory records `is_debug=false`,
-  `is_component_build=false`, `symbol_level=0`, and `dcheck_always_on=true`.
+- A new output directory records `is_official_build=true`, `is_debug=false`,
+  `is_component_build=false`, `symbol_level=0`, and
+  `dcheck_always_on=false`.
 - Chromium reports version `153.0.8010.36`.
 - `scripts/smoke.sh` reports `success: true`, CDP reachable through an
   ephemeral developer port, and `navigator.webdriver=false`.
@@ -124,7 +126,8 @@ and evidence-bound.
 - The reviewed masking patch remains enabled and is proven under an active CDP
   developer port.
 - Every retained downstream repair passes focused validation.
-- The release-mode, DCHECK-enabled browser builds and passes repository smoke.
+- The optimized official-style release browser builds and passes repository
+  smoke; the retained Blink repair passes its focused regression test.
 - A clean, hash-bound candidate is staged without installation or shared-alias
   cutover.
 
@@ -149,8 +152,18 @@ with the exact next action or blocker.
 - 2026-09-12: Plan opened from clean patchset and source identities. Official
   Stable release and Chromium tag evidence selected Linux `153.0.8010.36` at
   `507c6ee3e2f3b2ca0e660547e5b9ea4820c67f4c`.
+- 2026-09-12: Plan version 2 clarified that the requested production-grade
+  runtime uses `is_official_build=true` and does not force DCHECKs. This is a
+  production successor to the earlier diagnostic candidate; focused tests
+  continue to validate the retained Blink repair.
 - Checkpoint `P0002-C01`: plan version `1`; state `ready -> active`; progress
   `outcome_progress`; evidence: clean starting identities, current Stable
   release selection, and explicit masking contract; subagent status
   `not_spawned`; authority `in-envelope`; review disposition summary `none`;
   next action: verify the fetched tag, branch from Stable, and sync dependencies.
+- Checkpoint `P0002-C02`: plan version `2`; state `active -> active`; progress
+  `outcome_progress`; evidence: exact Stable tag verified, dependencies synced,
+  Linux hooks passed, both patches replayed one-to-one at `243db717de` and
+  `d417aadf10`, and exported queue committed as `3ecc6b8`; subagent status
+  `not_spawned`; authority `in-envelope`; review disposition summary `none`;
+  next action: generate the official-style production build and compile.
