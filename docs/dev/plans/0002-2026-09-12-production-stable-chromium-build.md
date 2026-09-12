@@ -70,7 +70,7 @@ and evidence-bound.
 
 ## Execution Governance
 
-- Plan version: `2`
+- Plan version: `3`
 - State transition: `ready -> active`
 - Authority classification: standing authority for source refresh, patch
   replay/reconciliation, repo documentation, build, tests, smoke, and staging
@@ -142,7 +142,8 @@ with the exact next action or blocker.
 - Stop on unexpected dirty state in either repository.
 - Stop if the official tag resolves to a different commit or version.
 - Stop on an unresolved patch conflict or unexplained downstream diff.
-- Stop if DCHECKs are absent from the generated build configuration.
+- Stop if the generated build configuration diverges from the production
+  settings in the Build and runtime validation gate.
 - Stop artifact staging if either tracked worktree is dirty.
 - Stop before installation, shared-alias cutover, retained-profile use,
   publication, push, or downstream production execution.
@@ -156,6 +157,15 @@ with the exact next action or blocker.
   runtime uses `is_official_build=true` and does not force DCHECKs. This is a
   production successor to the earlier diagnostic candidate; focused tests
   continue to validate the retained Blink repair.
+- 2026-09-12: The official-style `chrome` target built successfully in
+  `out/Stable153ProductionStealthCDP` in 3h00m21s (57,166 steps, zero failed
+  actions). The resulting executable reports Chromium `153.0.8010.36`; its GN
+  args record an official, non-debug, non-component, symbol-stripped build with
+  DCHECKs not forced and the Stable PGO profile supplied by Chromium hooks.
+- 2026-09-12: Repository smoke passed against the new executable while using an
+  ephemeral remote-debugging port: CDP was reachable and page JavaScript
+  reported `navigator.webdriver=false`. The smoke receipt is
+  `/tmp/chromium-stealthcdp-smoke-stable-153-production.json`.
 - Checkpoint `P0002-C01`: plan version `1`; state `ready -> active`; progress
   `outcome_progress`; evidence: clean starting identities, current Stable
   release selection, and explicit masking contract; subagent status
@@ -167,3 +177,9 @@ with the exact next action or blocker.
   `d417aadf10`, and exported queue committed as `3ecc6b8`; subagent status
   `not_spawned`; authority `in-envelope`; review disposition summary `none`;
   next action: generate the official-style production build and compile.
+- Checkpoint `P0002-C03`: plan version `3`; state `active -> active`; progress
+  `outcome_progress`; evidence: production-config Chrome build succeeded and
+  masking smoke passed under an active CDP developer port; subagent status
+  `not_spawned`; authority `in-envelope`; review disposition summary `corrected
+  stale DCHECK hard-stop wording`; next action: finish and run the retained
+  Blink repair regression, then commit this checkpoint before artifact staging.
