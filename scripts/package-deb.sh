@@ -161,6 +161,23 @@ cp -a "$artifact/patches.sha256" "$install_root/patches.sha256"
 cp -a "$artifact/patches" "$install_root/patches"
 ln -s /opt/chromium-stealthcdp/chrome "$stage/usr/bin/chromium-stealthcdp"
 
+mkdir -p "$stage/usr/share/applications"
+cat > "$stage/usr/share/applications/chromium-stealthcdp.desktop" <<'EOF'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Chromium StealthCDP
+Comment=Stable Chromium with private CDP behavior
+Exec=/usr/bin/chromium-stealthcdp %U
+TryExec=/usr/bin/chromium-stealthcdp
+Icon=web-browser
+Terminal=false
+Categories=Network;WebBrowser;
+MimeType=text/html;application/xhtml+xml;application/pdf;x-scheme-handler/http;x-scheme-handler/https;
+StartupNotify=true
+StartupWMClass=chromium
+EOF
+
 cat > "$stage/usr/share/doc/$package_name/README" <<EOF
 chromium-stealthcdp
 

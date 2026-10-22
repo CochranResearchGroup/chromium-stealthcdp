@@ -1,6 +1,6 @@
 # Plan 0003: Stable 156 with private CDP behavior
 
-State: OPEN
+State: CLOSED
 
 ## Objective
 
@@ -11,6 +11,11 @@ Refresh to current Linux Stable 156.0.8078.47, retaining the private
 Release source: https://chromereleases.googleblog.com/2026/10/stable-channel-update-for-desktop_02018666648.html
 
 ## Current State
+
+2026-10-22 successor: operator identified Agent Browser selection and explicitly
+authorized publication and installation. Candidate preparation is complete;
+remaining runtime work is owned by Plan 0004. Historical pending-target entries
+below retain the original evidence and are superseded by this disposition.
 
 Starting patch repository: clean main at b1f77a64e2bd4a2924abd948c39015ddc0d75209.
 Starting source: clean ec/chromium-stealthcdp-stable-153.0.8010.36 at

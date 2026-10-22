@@ -76,6 +76,25 @@ manifest or artifact is invalid.
 
 ## Build a Debian Package
 
+For a user-scoped Linux installation with a PATH command and a desktop browser
+choice, run:
+
+```sh
+scripts/install-linux-user.sh --artifact ../artifacts/chromium-stealthcdp/current
+```
+
+This installs an immutable version under
+`${XDG_DATA_HOME:-~/.local/share}/chromium-stealthcdp`, exposes
+`~/.local/bin/chromium-stealthcdp`, and registers **Chromium StealthCDP** in the
+desktop browser chooser. It preserves existing browser profiles and does not
+change the default browser.
+
+In Agent Browser, select `stealthcdp_chromium` with `--browser-build` or the
+dashboard's browser-build choice. Set
+`service.browserBuildManifests.stealthcdp_chromium.manifestPath` in user config
+to the installed `current/manifest.json`. Other browser choices retain their
+own executable resolution.
+
 Package the promoted artifact, not the live Chromium build tree:
 
 ```sh
