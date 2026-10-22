@@ -1,6 +1,6 @@
 # Chromium Patch Boundary
 
-Date: 2026-05-12
+Date: 2026-10-22
 
 ## Decision
 
@@ -25,17 +25,21 @@ explicit automation signal from headless, CDP pipe, `remote-debugging-port=0`,
 
 ## Upstream Compatibility Repairs
 
-The Facebook posts-search crash diagnosed on Chromium 150 does not require a
-downstream patch on the current base. Chromium CL 7992797, commit
+The original Facebook posts-search DCHECK diagnosed on Chromium 150 has an
+upstream repair. Chromium CL 7992797, commit
 `de949449a7fc4df4551492407a65fc3d63015c42` ("[line-break] Relax the DCHECK for
 BreakText results"), removed an invalid `LineBreaker` ordering DCHECK while
 preserving the existing failed-break restoration path. It also added
 `external/wpt/css/css-text/crashtests/line-breaker-overflow-crash.html`.
 
-Chromium `153.0.8003.0` at
-`b84d5f5c55a43d2f7778cfbc1996d3b835296d1c` contains that accepted upstream
-repair. Keep the downstream queue at one patch; do not add a duplicate
-line-breaker backport while this repair and its regression test remain present.
+That ordering-DCHECK repair is distinct from the stale shape-result defect
+covered by downstream patch 0002. On current Stable `156.0.8078.47` at
+`1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775`, `BreakText()` still widens a reused
+result on overflow without clearing its earlier shape. Retain patch 0002,
+which clears that shape and adds `BreakWordWithReusedShapeResult`, subject to
+focused regression validation. The current queue therefore has two patches:
+the private webdriver behavior and this compatibility repair. Do not add a
+duplicate ordering-DCHECK backport.
 
 Upstream review: <https://chromium-review.googlesource.com/c/chromium/src/+/7992797>
 

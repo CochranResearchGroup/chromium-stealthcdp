@@ -12,7 +12,7 @@ Patch queue for Chromium customizations related to stealth CDP behavior.
 Development happens in the Chromium checkout at `../src` on branch:
 
 ```sh
-ec/chromium-stealthcdp
+ec/chromium-stealthcdp-stable-156.0.8078.47
 ```
 
 ## Export

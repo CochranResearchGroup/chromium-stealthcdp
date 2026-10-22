@@ -20,8 +20,9 @@ Stable tag and VERSION verified at 1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775.
 Source branch ec/chromium-stealthcdp-stable-156.0.8078.47 carries an equivalent
 two-patch replay: range-diff reports equality for both patches; base diff is
 67 insertions and 6 deletions across four files; diff --check passes.
-Dependency sync and hooks passed; build, tests, smoke and candidate acceptance
-remain open.
+Dependency sync, hooks, release build, CDP smoke and all 43 LineBreakerTest
+tests passed. Candidate staging is ready. Runtime replacement is awaiting
+identification of the intended launcher from the operator's pending question.
 The previous production output does not explicitly set testing flavor; its
 current source default is false. The reported runtime designation remains
 identified in Agent Browser at ~/.agent-browser/browsers/chrome-156.0.8078.47/chrome:
@@ -54,7 +55,7 @@ in candidate preparation. Resolve the active executable before replacement.
 
 ## Governance
 
-Version 3; active V8 profile repair/build packet; primary owns both worktrees.
+Version 4; active candidate staging packet; primary owns both worktrees.
 Two attempts per unit, one drift review and one remediation pass. Checkpoint
 after source replay, build, and validation; bound stalled network units to ten
 minutes before recording a blocker. No delegation during coupled source work
@@ -112,3 +113,13 @@ repo group is defined; maintain continuity here.
   Focused blink_unittests build is running in the same output; log
   /tmp/chromium-stable156-blink-build.log. Candidate staging and installed
   runtime replacement remain pending.
+- blink_unittests built successfully (3,923 steps). All 43 LineBreakerTest.*
+  cases passed, including BreakWordWithReusedShapeResult. Durable evidence:
+  evidence/line-breaker-tests.log and evidence/line-breaker-tests.json. These
+  checks were run by the primary agent against the current source/output.
+- Version 4 records completed candidate validation and moves to staging under
+  ../artifacts/chromium-stealthcdp-candidates/stable-156-production-1d17a2e2.
+  The shared alias remains at 150.0.7835.0+stealthcdp.6b6558b55a1d.
+  No installation, publication, retained-profile operation or browser restart
+  has been performed. This plan stays OPEN while the actual runtime replacement
+  target is unresolved; candidate preparation is independently reviewable.
