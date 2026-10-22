@@ -36,3 +36,13 @@ _Avoid_: Restart, installation
 **Browser consumer**:
 A person, application or service that selects and launches a downstream browser.
 _Avoid_: Browser profile, build platform
+
+**Routine update**:
+An upstream Stable update that works with the approved downstream patch queue
+and satisfies the established release qualification requirements.
+_Avoid_: Repair, unreviewed patch change
+
+**Repair proposal**:
+A proposed downstream change needed to restore compatibility or qualification
+when an upstream update cannot complete as a routine update.
+_Avoid_: Automatic patch acceptance, routine update
