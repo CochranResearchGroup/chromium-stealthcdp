@@ -62,3 +62,23 @@ will follow candidate validation. Stop on unexpected dirty state, unexplained
 delta, unresolved replay conflicts or failed acceptance. No graph initialization.
 Graph memory disposition: forbidden for repo graph writes because no reviewed
 repo group is defined; maintain continuity here.
+
+## Execution Evidence
+
+- Source replay checkpoint 14ba094: source HEAD
+  15a1e89ace187947b2a39881b45f4de992157b56; both patches equal in range-diff.
+- Dependency sync and Linux hooks completed successfully using the separate
+  ../.gclient.stable156-linux config. Original Windows config is unchanged.
+  The optional instrumented_libs checkout was fetched and aligned to its exact
+  gitlink 51898bc68243bf1f096b49420f96312df48c363f; tracked source is clean.
+- GN generation passed (36,329 targets). Matching Stable PGO profile downloaded;
+  output out/Stable156ProductionStealthCDP records all requested release flags
+  and both is_chrome_for_testing=false and is_chrome_for_testing_branded=false.
+- Chrome compilation started with eight concurrent jobs, bounded for available
+  memory. Log /tmp/chromium-stable156-build.log. Build and tests remain pending.
+- Independent drift review /root/review_stable156 completed with no material
+  findings. Primary accepted the review, having independently checked tag,
+  VERSION, range-diff and diff --check. Reviewer correctly leaves runtime
+  replacement and future build/test acceptance unresolved.
+- Durable baseline smoke retained at
+  ../artifacts/chromium-stealthcdp-candidates/stable-156-production-1d17a2e2/evidence/managed-browser-baseline.json.
