@@ -21,7 +21,7 @@ Source branch ec/chromium-stealthcdp-stable-156.0.8078.47 carries an equivalent
 two-patch replay: range-diff reports equality for both patches; base diff is
 67 insertions and 6 deletions across four files; diff --check passes.
 Dependency sync, hooks, release build, CDP smoke and all 43 LineBreakerTest
-tests passed. Candidate staging is ready. Runtime replacement is awaiting
+tests passed. Candidate staged and freshness verified. Runtime replacement is awaiting
 identification of the intended launcher from the operator's pending question.
 The previous production output does not explicitly set testing flavor; its
 current source default is false. The reported runtime designation remains
@@ -55,7 +55,9 @@ in candidate preparation. Resolve the active executable before replacement.
 
 ## Governance
 
-Version 4; active candidate staging packet; primary owns both worktrees.
+Version 5; candidate complete, awaiting runtime-target clarification; primary
+owns both worktrees. Remaining required input is the intended launcher, not
+another source/build approval.
 Two attempts per unit, one drift review and one remediation pass. Checkpoint
 after source replay, build, and validation; bound stalled network units to ten
 minutes before recording a blocker. No delegation during coupled source work
@@ -123,3 +125,29 @@ repo group is defined; maintain continuity here.
   No installation, publication, retained-profile operation or browser restart
   has been performed. This plan stays OPEN while the actual runtime replacement
   target is unresolved; candidate preparation is independently reviewable.
+- Candidate staged as 156.0.8078.47+stealthcdp.4b864442a8fd under the dedicated
+  candidate root. Manifest binds validated source
+  15a1e89ace187947b2a39881b45f4de992157b56 and staging checkpoint
+  de50fa097dcf76c0d33b5285b8f7b5cc8c84eb87, with both dirty flags false.
+  Executable SHA-256 is
+  2492fd6e2bab04707c263862df5563d10eee1660253cbcc0c06af3699ecc7b9c.
+  Smoke SHA-256 is
+  857a27c729fbe058059ead051c8c818afd93d8c71cf9207573d4999e67d10b26.
+  Primary independently hashed both files and matched the manifest.
+- evidence/freshness.json reports fresh=true. A second smoke against the
+  staged executable passed; evidence/staged-runtime-smoke.json identifies
+  Chromium 156.0.8078.47 and navigator.webdriver=false. The source and patch
+  worktrees were clean at staging, and the shared alias was unchanged.
+  This subsequent documentation-only checkpoint does not change the queue;
+  manifest repoSha intentionally records the staging checkpoint.
+- Final bounded outcome: private Stable 156 candidate ready; no patch or
+  binary published. Plan remains OPEN solely for actual runtime replacement
+  target clarification. No retained profile or active browser was changed.
+- Closed-world acceptance review /root/review_stable156 returned PASS after
+  independently checking flags, manifest identities, hashes, both smokes and
+  43/43 test successes. Primary accepted that evidence; no new findings or
+  remediation remain. Its proposed replacement approval gate is interpreted
+  narrowly: identify the actual launcher and honor the explicit shared-alias
+  cutover rule, without requesting duplicate approval for ordinary update work.
+- Memory disposition forbidden, recorded in evidence/memory-disposition.json:
+  zero graph writes attempted because no reviewed repo cloud is defined.
