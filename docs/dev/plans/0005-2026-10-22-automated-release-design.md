@@ -19,9 +19,11 @@ Existing helpers implement build, smoke, promotion, packaging and installation.
 No scheduled CI release/update orchestrator is implemented in this repository.
 The older updater-packager system document contains proposed helpers that do
 not exist and must not be treated as delivered automation.
-Interview rounds 1 and 2 are now complete: nineteen operating-policy choices
-are accepted. Only precise credential type and repair-drafting bounds remain
-before the consolidated design review. No operational automation is enabled.
+All three interview rounds are complete. Operating policy and repair bounds
+are settled; the final instruction to use existing gh authentication overrides
+the earlier dedicated-credential preference. The consolidated design is in
+docs/automated-release-design.md and awaits shared-understanding confirmation.
+No operational automation is enabled.
 
 ## Interview frontier
 
@@ -65,22 +67,29 @@ selected, with no active Other answers:
 | Local recovery | Automatically restore previous known-good activation after a failed installed check and stop further deployment. Preserve profiles, active peers and failure evidence. |
 | Public defects | Quarantine confirmed release defects and withdraw latest eligibility while preserving tag/assets. Local environmental failures do not automatically condemn the release. |
 | Urgent security | Preserve the no-forced-restart rule and prominently flag older running browsers. |
-| Credentials | Dedicated repository-scoped automation credential stored outside source; precise type and provisioning remain unsettled. |
+| Credentials | Round-2 preference for a dedicated credential; superseded in round 3 by the explicit instruction to use existing gh authentication. No App or extra token provisioning is required. |
 | Notifications | Deduplicated GitHub issues for failures/repair proposals; release notes and receipts for successful runs. |
 | Retries | One retry for a verified transient fetch/download failure; reconcile uncertain publication/deployment effects before resuming. No identical blind rebuild loops. |
 | Concurrency | One pinned run at a time; coalesce pending triggers into the newest pending target after it finishes. |
 | Integration | Automatically merge qualified routine PRs; repairs require human review; never bypass protections or force-push. |
 
 ADRs 0003 and 0004 record recovery/public-history and source-integration
-trade-offs. The remaining frontier concerns precise credential lifecycle and
-bounded repair drafting, followed by confirmation of the completed design.
+trade-offs. Round 3 settled the credential and repair-drafting frontier.
 
 Round 3 is published in the same session as questionnaire fa40846681c1,
 revision 04c87cf74ca69fefa01f6e67c4bb4a3c7a890c203d48ea5362b6b7ad492c9242.
 Q20 proposes a repository-only GitHub App with short-lived installation tokens;
 Q21 proposes one isolated 30-minute Codex repair-draft attempt per failed target,
-with human review and report-only fallback when unavailable. These two proposals
-are unanswered. Other/custom responses can introduce additional decisions.
+with human review and report-only fallback when unavailable.
+
+Round 3 response 4747459c3d9f4eaf8883ef28392aea39 was retrieved complete against
+that exact revision. Credential choice was Other with the explicit instruction
+to use gh; this is preserved as a custom instruction, not silently mapped to
+the recommended GitHub App. It is interpreted as the existing installed gh login
+and supersedes round 2's dedicated-credential preference. The one-attempt,
+30-minute isolated Codex repair-draft recommendation was explicitly selected.
+ADR 0005 records the credential trade-off. There are no unanswered design
+branches; final consolidated confirmation remains, not another questionnaire.
 
 Previews session: 943d71120464.
 Questionnaire: aeee4d08ffbd.
@@ -119,9 +128,16 @@ merge methods are enabled, and the main protection endpoint reported no branch
 protection while the ruleset listing returned none. No settings were changed;
 controller-driven merging after qualification does not require enabling native
 auto-merge or bypassing protections. A dedicated automation credential has not
-been provisioned. Codex CLI 0.163.0 supports noninteractive exec and separate
+been provisioned and is no longer required following the round-3 gh instruction.
+Codex CLI 0.163.0 supports noninteractive exec and separate
 workspaces; its help exposes no explicit wall-time, token or dollar cap.
 An outer service/process limit can enforce wall time. Authentication/model access
 and owned-process containment under timeout remain implementation acceptance,
 not proven readiness. Fact inventory /root/automation_design_facts reported these
 limits without invoking a model or changing repository/runtime settings.
+
+Independent design consistency review /root/review_automation_design completed
+with no material findings. It compared the consolidated design with accepted
+policies and ADRs, including the credential override and repair bounds. Primary
+accepted this bounded review; it is documentation consistency evidence, not
+implementation or runtime acceptance. Final design confirmation remains open.
