@@ -1,13 +1,13 @@
 # Plan 0004: Publish and install Stable 156 as a browser choice
 
-State: OPEN
+State: CLOSED
 
 ## Objective and authority
 
 The operator explicitly requested publication and installation, Agent Browser
 selection support, and broad browser-choice availability. This authorizes the
 shared artifact alias cutover and user-scoped runtime configuration. Public
-GitHub destination remains a clarification because the configured repo is
+GitHub destination initially required clarification because the configured repo is
 public and the modification was described as private. Subsequent readback
 resolved that ambiguity: remote main already contains the identical webdriver
 modification and the public Stable 153 release distributes the same queue.
@@ -15,6 +15,14 @@ The operator's explicit publish instruction therefore follows that existing
 release channel; no new private implementation is being disclosed.
 
 ## Current State
+
+Stable 156 is published, installed and available through Agent Browser selection,
+the user PATH and desktop browser chooser. The public release and source tag
+are verified; all seven uploaded asset digests match local files. Installed
+Agent Browser launch used the exact validated executable, reported
+navigator.webdriver=false, and closed cleanly. No remaining acceptance work.
+
+## Starting State
 
 Plan 0003 produced validated candidate 156.0.8078.47+stealthcdp.4b864442a8fd;
 source 15a1e89ace187947b2a39881b45f4de992157b56, clean patch repo
@@ -66,7 +74,21 @@ continuity here. User runtime configuration and receipts stay outside Git.
   default is unchanged. The minimal host lacks desktop-file-utils, so the
   installer updates only this entry's MIME registrations atomically as fallback.
 - Debian package built successfully and contains the desktop entry and
-  /usr/bin/chromium-stealthcdp launcher. Public release assembly is next.
+  /usr/bin/chromium-stealthcdp launcher. The executable extracted from both
+  the Debian package and portable archive matches the accepted SHA-256.
 - Independent reviewer /root/review_install156 returned no material findings
   in the initial pass or closed-world MIME fallback verification. Primary
   accepted the review and independently verified install and runtime behavior.
+- Public release:
+  https://github.com/CochranResearchGroup/chromium-stealthcdp/releases/tag/v156.0.8078.47-stealthcdp.4b864442a8fd
+  Source main and the immutable release tag were read back at
+  8787d3364a59c5336d466cbf2cbd7b25fb298c8e before this documentation closeout.
+  All seven uploaded assets have server SHA-256 digests matching local hashes;
+  the release is published and not a prerelease. Assets include Debian and
+  portable Linux runtimes, user installer, manifest, smoke and checksums.
+- Live Agent Browser service status reports the installed manifest valid and
+  ready, executablePathSource=manifest, stealthCdpChromiumReady=true and no
+  launch warnings. It resolves Chromium 156.0.8078.47 from the installed copy.
+- Final memory disposition: forbidden because no reviewed repo Graphiti group
+  is defined; zero graph writes. Continuity is preserved by this source plan,
+  release notes and external install/publication receipts.
