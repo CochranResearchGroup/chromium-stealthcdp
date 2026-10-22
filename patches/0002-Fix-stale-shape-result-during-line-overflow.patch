@@ -1,4 +1,4 @@
-From d417aadf10fc848a686badd2b074649cb1da971c Mon Sep 17 00:00:00 2001
+From 15a1e89ace187947b2a39881b45f4de992157b56 Mon Sep 17 00:00:00 2001
 From: Eric W Cochran <ecochran76@ewc2.cbe.iastate.edu>
 Date: Thu, 13 Aug 2026 17:06:02 -0500
 Subject: [PATCH 2/2] Fix stale shape result during line overflow
@@ -10,10 +10,10 @@ Subject: [PATCH 2/2] Fix stale shape result during line overflow
  3 files changed, 66 insertions(+)
 
 diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker.cc b/third_party/blink/renderer/core/layout/inline/line_breaker.cc
-index a7d647318c..ec9d94fdfe 100644
+index e126e872ddb..2c90a3c4d48 100644
 --- a/third_party/blink/renderer/core/layout/inline/line_breaker.cc
 +++ b/third_party/blink/renderer/core/layout/inline/line_breaker.cc
-@@ -1689,9 +1689,19 @@ LineBreaker::BreakResult LineBreaker::BreakText(
+@@ -1700,9 +1700,19 @@ LineBreaker::BreakResult LineBreaker::BreakText(
      // rewinded. Making this item long enough to overflow is enough.
      if (!shape_result) {
        DCHECK(breaker.NoResultIfOverflow());
@@ -34,7 +34,7 @@ index a7d647318c..ec9d94fdfe 100644
      }
      DCHECK_EQ(shape_result->NumCharacters(),
 diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker.h b/third_party/blink/renderer/core/layout/inline/line_breaker.h
-index 507c26b5da..6e8a391dfd 100644
+index 507c26b5dae..6e8a391dfdc 100644
 --- a/third_party/blink/renderer/core/layout/inline/line_breaker.h
 +++ b/third_party/blink/renderer/core/layout/inline/line_breaker.h
 @@ -117,6 +117,13 @@ class CORE_EXPORT LineBreaker {
@@ -62,10 +62,10 @@ index 507c26b5da..6e8a391dfd 100644
    bool force_non_empty_if_last_line_ = false;
  
 diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc b/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
-index b85384e991..e314caa90f 100644
+index c15c1dc258d..6498e79ff48 100644
 --- a/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
 +++ b/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
-@@ -140,6 +140,16 @@ class LineBreakerTest : public RenderingTest {
+@@ -141,6 +141,16 @@ class LineBreakerTest : public RenderingTest {
  
  namespace {
  
@@ -82,7 +82,7 @@ index b85384e991..e314caa90f 100644
  TEST_F(LineBreakerTest, FitWithEpsilon) {
    LoadAhem();
    InlineNode node = CreateInlineNode(R"HTML(
-@@ -419,6 +429,42 @@ TEST_F(LineBreakerTest, OverflowMargin) {
+@@ -420,6 +430,42 @@ TEST_F(LineBreakerTest, OverflowMargin) {
    EXPECT_EQ("789", lines[2].first);
  }
  

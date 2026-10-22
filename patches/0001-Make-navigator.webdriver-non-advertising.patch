@@ -1,4 +1,4 @@
-From 243db717def06c3acb1037d8685caabc06cf5824 Mon Sep 17 00:00:00 2001
+From bb38d33882f9dbeaef9c182a70a28ffa7793f29a Mon Sep 17 00:00:00 2001
 From: Eric W Cochran <ecochran76@ewc2.cbe.iastate.edu>
 Date: Mon, 11 May 2026 17:48:05 -0500
 Subject: [PATCH 1/2] Make navigator.webdriver non-advertising
@@ -8,7 +8,7 @@ Subject: [PATCH 1/2] Make navigator.webdriver non-advertising
  1 file changed, 1 insertion(+), 6 deletions(-)
 
 diff --git a/third_party/blink/renderer/core/frame/navigator.cc b/third_party/blink/renderer/core/frame/navigator.cc
-index 583f05f8dd..90a9a3a91b 100644
+index 583f05f8dd5..90a9a3a91b9 100644
 --- a/third_party/blink/renderer/core/frame/navigator.cc
 +++ b/third_party/blink/renderer/core/frame/navigator.cc
 @@ -98,12 +98,7 @@ bool Navigator::cookieEnabled() const {

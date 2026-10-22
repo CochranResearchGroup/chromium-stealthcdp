@@ -16,10 +16,18 @@ Starting patch repository: clean main at b1f77a64e2bd4a2924abd948c39015ddc0d7520
 Starting source: clean ec/chromium-stealthcdp-stable-153.0.8010.36 at
 d417aadf10fc848a686badd2b074649cb1da971c. Pin is
 507c6ee3e2f3b2ca0e660547e5b9ea4820c67f4c. Stable tag fetch is in progress.
-All source, dependency, build, smoke and candidate acceptance gates remain open.
+Stable tag and VERSION verified at 1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775.
+Source branch ec/chromium-stealthcdp-stable-156.0.8078.47 carries an equivalent
+two-patch replay: range-diff reports equality for both patches; base diff is
+67 insertions and 6 deletions across four files; diff --check passes.
+Dependency sync, build, tests, smoke and candidate acceptance remain open.
 The previous production output does not explicitly set testing flavor; its
 current source default is false. The reported runtime designation remains
-unattributed until the actual executable is identified.
+identified in Agent Browser at ~/.agent-browser/browsers/chrome-156.0.8078.47/chrome:
+the disposable baseline smoke identifies Google Chrome for Testing and reports
+navigator.webdriver=true, CDP reachable, success=false. Receipt:
+/tmp/chromium-stealthcdp-managed-156-baseline.json. Operator confirmation of the
+intended replacement target remains pending.
 
 ## Scope and Execution
 
