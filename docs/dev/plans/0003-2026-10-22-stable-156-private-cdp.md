@@ -105,3 +105,10 @@ repo group is defined; maintain continuity here.
   consistency check was disabled. Failure evidence is retained at
   evidence/build-ninja-v8-profile-failure.log. Incremental twelve-job build
   retried in the same output, log /tmp/chromium-stable156-build-profile-retry.log.
+- Chrome build completed successfully (38,057 steps in the final retry).
+  Executable reports Chromium 156.0.8078.47 without a testing designation.
+  Durable evidence/smoke-stable156.json reports success=true, active ephemeral
+  CDP and navigator.webdriver=false. The V8 snapshot profile check passed.
+  Focused blink_unittests build is running in the same output; log
+  /tmp/chromium-stable156-blink-build.log. Candidate staging and installed
+  runtime replacement remain pending.
