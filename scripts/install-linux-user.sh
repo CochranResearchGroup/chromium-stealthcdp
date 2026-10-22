@@ -16,6 +16,7 @@ done
 
 python3 - "$artifact" <<'PY'
 import hashlib
+import configparser
 import json
 import os
 from pathlib import Path
@@ -51,6 +52,7 @@ root = data / 'chromium-stealthcdp'
 root.mkdir(mode=0o700, parents=True, exist_ok=True)
 version = root / name
 launcher = Path.home() / '.local/bin/chromium-stealthcdp'
+assert not any(c in str(launcher) for c in '\n\r%"`$\\'), 'unsupported launcher path'
 executable = manifest['executable']['relativePath']
 launcher_target = root / 'current' / executable
 if os.path.lexists(launcher):
@@ -86,7 +88,6 @@ replace_symlink(root / 'current', name)
 replace_symlink(launcher, str(launcher_target))
 desktop = data / 'applications/chromium-stealthcdp.desktop'
 desktop.parent.mkdir(parents=True, exist_ok=True)
-assert not any(c in str(launcher) for c in '\n\r%"`$\\'), 'unsupported launcher path'
 content = f'''[Desktop Entry]
 Version=1.0
 Type=Application
@@ -106,6 +107,27 @@ with tempfile.NamedTemporaryFile(mode='w', dir=desktop.parent, delete=False) as 
     temporary = Path(stream.name)
 temporary.chmod(0o644)
 os.replace(temporary, desktop)
+if shutil.which('update-desktop-database') is None:
+    # Minimal hosts may lack desktop-file-utils. Register this entry in the
+    # per-directory MIME cache without changing any default associations.
+    cache_path = desktop.parent / 'mimeinfo.cache'
+    cache = configparser.ConfigParser(interpolation=None, strict=False)
+    cache.optionxform = str
+    cache.read(cache_path)
+    if not cache.has_section('MIME Cache'):
+        cache.add_section('MIME Cache')
+    for mime in ('text/html', 'application/xhtml+xml', 'application/pdf',
+                 'x-scheme-handler/http', 'x-scheme-handler/https'):
+        entries = cache.get('MIME Cache', mime, fallback='').split(';')
+        entries = [entry for entry in entries if entry]
+        if desktop.name not in entries:
+            entries.append(desktop.name)
+        cache.set('MIME Cache', mime, ';'.join(entries) + ';')
+    with tempfile.NamedTemporaryFile(mode='w', dir=desktop.parent, delete=False) as stream:
+        cache.write(stream, space_around_delimiters=False)
+        temporary = Path(stream.name)
+    temporary.chmod(0o644)
+    os.replace(temporary, cache_path)
 print(json.dumps({'version': manifest['chromeVersion'], 'executable': str(launcher),
                   'manifest': str(root / 'current/manifest.json'),
                   'desktopEntry': str(desktop)}, indent=2))

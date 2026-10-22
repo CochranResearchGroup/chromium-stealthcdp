@@ -8,8 +8,11 @@ The operator explicitly requested publication and installation, Agent Browser
 selection support, and broad browser-choice availability. This authorizes the
 shared artifact alias cutover and user-scoped runtime configuration. Public
 GitHub destination remains a clarification because the configured repo is
-public and the modification was described as private. Do not disclose the
-private queue publicly while that clarification is pending.
+public and the modification was described as private. Subsequent readback
+resolved that ambiguity: remote main already contains the identical webdriver
+modification and the public Stable 153 release distributes the same queue.
+The operator's explicit publish instruction therefore follows that existing
+release channel; no new private implementation is being disclosed.
 
 ## Current State
 
@@ -42,3 +45,28 @@ Implementation not_spawned: one coupled install/configuration surface.
 Independent evaluator follows the verified install. No repo Graphiti group is
 defined; use a forbidden non-write receipt at closeout and retain source
 continuity here. User runtime configuration and receipts stay outside Git.
+
+## Evidence and current execution
+
+- Shared current alias now selects 156.0.8078.47+stealthcdp.4b864442a8fd;
+  previous Stable 150 artifact is preserved.
+- Reusable user installer installed the exact hash-validated artifact, desktop
+  entry and PATH command; repeated installation succeeded without recopying.
+  Direct installed smoke passed and reported Chromium 156.0.8078.47.
+- Agent Browser user configuration now binds both the build manifest selector
+  and exact Linux executable registry entry to the installed Stable 156 build.
+  Other executable records and choices are preserved. Original configuration
+  and runtime receipts remain in the private user state directory outside Git.
+- Explicit stealthcdp_chromium launch through installed Agent Browser succeeded.
+  Its OS executable SHA-256 matched the accepted binary
+  2492fd6e2bab04707c263862df5563d10eee1660253cbcc0c06af3699ecc7b9c;
+  JavaScript reported webdriver=false and Chrome/156. Scoped close succeeded;
+  fresh process census found no installed-candidate processes remaining.
+- GIO lists chromium-stealthcdp.desktop for HTTPS; the existing Google Chrome
+  default is unchanged. The minimal host lacks desktop-file-utils, so the
+  installer updates only this entry's MIME registrations atomically as fallback.
+- Debian package built successfully and contains the desktop entry and
+  /usr/bin/chromium-stealthcdp launcher. Public release assembly is next.
+- Independent reviewer /root/review_install156 returned no material findings
+  in the initial pass or closed-world MIME fallback verification. Primary
+  accepted the review and independently verified install and runtime behavior.
