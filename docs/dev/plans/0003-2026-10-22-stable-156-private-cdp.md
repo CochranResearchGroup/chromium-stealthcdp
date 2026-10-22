@@ -54,7 +54,7 @@ in candidate preparation. Resolve the active executable before replacement.
 
 ## Governance
 
-Version 2; active Ninja build packet; primary owns both worktrees.
+Version 3; active V8 profile repair/build packet; primary owns both worktrees.
 Two attempts per unit, one drift review and one remediation pass. Checkpoint
 after source replay, build, and validation; bound stalled network units to ten
 minutes before recording a blocker. No delegation during coupled source work
@@ -94,3 +94,14 @@ repo group is defined; maintain continuity here.
   1.12.1 compilation is running at eight jobs, log
   /tmp/chromium-stable156-build-ninja.log. This is a distinct build-runner repair
   packet, bounded to two attempts; no shared outputs were cleaned or altered.
+- With improved host capacity (38 GiB available; load ~20 on 28 CPUs), the
+  initial eight-job Ninja run was intentionally interrupted and resumed at
+  twelve jobs without clearing outputs. The subsequent run stopped at V8
+  mksnapshot: stale builtins profile rejected for RecordWriteSaveFP. The browser
+  PGO profile and V8 builtins profile are distinct. Version 3 repairs this
+  verified blocker by executing Chromium's exact V8 profile hook with
+  --check-v8-revision; it downloaded version 15.6.75.19 successfully, checked
+  against V8 392e44423f46d75904da712fadea4c7d5d97967f. No optimization or profile
+  consistency check was disabled. Failure evidence is retained at
+  evidence/build-ninja-v8-profile-failure.log. Incremental twelve-job build
+  retried in the same output, log /tmp/chromium-stable156-build-profile-retry.log.
