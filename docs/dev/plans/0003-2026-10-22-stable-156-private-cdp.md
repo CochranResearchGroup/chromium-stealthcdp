@@ -20,7 +20,8 @@ Stable tag and VERSION verified at 1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775.
 Source branch ec/chromium-stealthcdp-stable-156.0.8078.47 carries an equivalent
 two-patch replay: range-diff reports equality for both patches; base diff is
 67 insertions and 6 deletions across four files; diff --check passes.
-Dependency sync, build, tests, smoke and candidate acceptance remain open.
+Dependency sync and hooks passed; build, tests, smoke and candidate acceptance
+remain open.
 The previous production output does not explicitly set testing flavor; its
 current source default is false. The reported runtime designation remains
 identified in Agent Browser at ~/.agent-browser/browsers/chrome-156.0.8078.47/chrome:
@@ -53,7 +54,7 @@ in candidate preparation. Resolve the active executable before replacement.
 
 ## Governance
 
-Version 1; active source preparation packet; primary owns both worktrees.
+Version 2; active Ninja build packet; primary owns both worktrees.
 Two attempts per unit, one drift review and one remediation pass. Checkpoint
 after source replay, build, and validation; bound stalled network units to ten
 minutes before recording a blocker. No delegation during coupled source work
@@ -82,3 +83,14 @@ repo group is defined; maintain continuity here.
   replacement and future build/test acceptance unresolved.
 - Durable baseline smoke retained at
   ../artifacts/chromium-stealthcdp-candidates/stable-156-production-1d17a2e2/evidence/managed-browser-baseline.json.
+- Version 2 replanning: both allowed Siso attempts failed on fresh generated
+  output timestamps roughly nine seconds ahead of Siso's clock; no compiler
+  failure was reported. Preserve evidence/build-attempt-1.log and
+  evidence/build-attempt-2.log under the same candidate root. A direct Python
+  realtime/file-mtime probe agrees to within a millisecond; host clock changes
+  are outside this packet. Depot_tools explicitly supports use_siso=false.
+  GN generated a separate out/Stable156ProductionStealthCDPNinja directory
+  with identical release/branding flags plus use_siso=false. Native Ninja
+  1.12.1 compilation is running at eight jobs, log
+  /tmp/chromium-stable156-build-ninja.log. This is a distinct build-runner repair
+  packet, bounded to two attempts; no shared outputs were cleaned or altered.
