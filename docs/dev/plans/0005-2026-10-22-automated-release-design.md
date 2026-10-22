@@ -19,6 +19,9 @@ Existing helpers implement build, smoke, promotion, packaging and installation.
 No scheduled CI release/update orchestrator is implemented in this repository.
 The older updater-packager system document contains proposed helpers that do
 not exist and must not be treated as delivered automation.
+Interview rounds 1 and 2 are now complete: nineteen operating-policy choices
+are accepted. Only precise credential type and repair-drafting bounds remain
+before the consolidated design review. No operational automation is enabled.
 
 ## Interview frontier
 
@@ -39,17 +42,45 @@ No Other answers were active. Raw answers remain outside Git. These choices
 settle design policy, not permission to enable an unfinished implementation.
 
 ADRs 0001 and 0002 record the consequential placement and continuity trade-offs.
-The next frontier covers schedule, resource budget, qualification, recovery,
+At the end of round 1, the next frontier covered schedule, resource budget, qualification, recovery,
 credential custody, notifications and security-update exceptions. Decisions
-whose prerequisites are still being inspected remain pending.
+were not treated as settled before their answers arrived.
 
 Round 2 is published in the same Previews session as questionnaire e2b56a1c353b,
 revision 01de8166f1fb9c7c5c3471cdeec3ffb9e67709bfcf8d9bd955388624f40ffd16.
 It asks Q8–Q19: schedule, resource budget, retention, qualification, local
 rollback, public-release quarantine, urgent security behavior, credentials,
-notifications, bounded retries, concurrency and source integration. These are
-proposals, not accepted decisions. Later credential provisioning and any
-alternative answers remain downstream decisions rather than assumptions.
+notifications, bounded retries, concurrency and source integration.
+
+Round 2 response ce433e392bf249e3a556aa6168905ae5 was retrieved as complete
+against that exact revision. All twelve recommendations were explicitly
+selected, with no active Other answers:
+
+| Area | Accepted policy |
+| --- | --- |
+| Schedule | Daily at 03:00 America/Chicago, with a catch-up check after unavailability. |
+| Resource budget | Eight compile jobs, eight CPU-equivalents, 32 GiB memory ceiling, 12-hour run limit, 200 GiB free-disk reserve, low CPU/I/O priority; defer when headroom is insufficient. |
+| Local retention | Active and previous releases plus one more good release; preserve versions used by running browsers, latest failed-run evidence and 90 days of logs. Clean only unused automation-owned files. Never delete public history or operator-owned source/output trees. |
+| Qualification | Exact Stable identity, clean patch replay, normal Chromium branding, official release flags and matching optimization profiles, retained-patch regressions, CDP webdriver=false, package/provenance/hash checks and isolated Agent Browser acceptance before release; verify installed launch after activation. |
+| Local recovery | Automatically restore previous known-good activation after a failed installed check and stop further deployment. Preserve profiles, active peers and failure evidence. |
+| Public defects | Quarantine confirmed release defects and withdraw latest eligibility while preserving tag/assets. Local environmental failures do not automatically condemn the release. |
+| Urgent security | Preserve the no-forced-restart rule and prominently flag older running browsers. |
+| Credentials | Dedicated repository-scoped automation credential stored outside source; precise type and provisioning remain unsettled. |
+| Notifications | Deduplicated GitHub issues for failures/repair proposals; release notes and receipts for successful runs. |
+| Retries | One retry for a verified transient fetch/download failure; reconcile uncertain publication/deployment effects before resuming. No identical blind rebuild loops. |
+| Concurrency | One pinned run at a time; coalesce pending triggers into the newest pending target after it finishes. |
+| Integration | Automatically merge qualified routine PRs; repairs require human review; never bypass protections or force-push. |
+
+ADRs 0003 and 0004 record recovery/public-history and source-integration
+trade-offs. The remaining frontier concerns precise credential lifecycle and
+bounded repair drafting, followed by confirmation of the completed design.
+
+Round 3 is published in the same session as questionnaire fa40846681c1,
+revision 04c87cf74ca69fefa01f6e67c4bb4a3c7a890c203d48ea5362b6b7ad492c9242.
+Q20 proposes a repository-only GitHub App with short-lived installation tokens;
+Q21 proposes one isolated 30-minute Codex repair-draft attempt per failed target,
+with human review and report-only fallback when unavailable. These two proposals
+are unanswered. Other/custom responses can introduce additional decisions.
 
 Previews session: 943d71120464.
 Questionnaire: aeee4d08ffbd.
@@ -82,3 +113,15 @@ CPUs and 94 GiB RAM; current free capacity is advisory and must be checked per
 run. Noninteractive GitHub authentication works but has broad repo/workflow
 scopes. Desktop/email delivery was not established. These facts ground the
 round-2 recommendations; no service, credential or notification was changed.
+
+Final read-only prerequisites: GitHub native auto-merge is disabled, all three
+merge methods are enabled, and the main protection endpoint reported no branch
+protection while the ruleset listing returned none. No settings were changed;
+controller-driven merging after qualification does not require enabling native
+auto-merge or bypassing protections. A dedicated automation credential has not
+been provisioned. Codex CLI 0.163.0 supports noninteractive exec and separate
+workspaces; its help exposes no explicit wall-time, token or dollar cap.
+An outer service/process limit can enforce wall time. Authentication/model access
+and owned-process containment under timeout remain implementation acceptance,
+not proven readiness. Fact inventory /root/automation_design_facts reported these
+limits without invoking a model or changing repository/runtime settings.

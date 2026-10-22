@@ -46,3 +46,13 @@ _Avoid_: Repair, unreviewed patch change
 A proposed downstream change needed to restore compatibility or qualification
 when an upstream update cannot complete as a routine update.
 _Avoid_: Automatic patch acceptance, routine update
+
+**Release quarantine**:
+The withdrawal of a confirmed defective published release from eligibility for
+new activation while preserving its identity, artifacts and history.
+_Avoid_: Release deletion, local rollback
+
+**Activation rollback**:
+The restoration of a previously qualified browser selection for subsequent
+launches by a particular consumer.
+_Avoid_: Profile restoration, release deletion
