@@ -1,6 +1,6 @@
 # Plan 0007: Private Slack upgrade announcements
 
-State: OPEN
+State: CLOSED
 
 ## Current State and authority
 
@@ -42,3 +42,33 @@ action poisoning later notices, and constant identity suppressing subsequent
 preflight failures. Their targeted fixtures pass; closed-world review pending.
 No real Slack message has been sent. Remaining gate is recipient workspace,
 then readiness/test receipt, immutable controller installation and runtime readback.
+
+## Activation and closeout
+
+Operator selected SoyLei and confirmed continuation. Exact human recipient
+resolved uniquely with bot-write readiness; routing and its identity binding
+are retained only in private controller configuration, not this repository.
+SoyLei mirror freshness advisories do not block its separate outbound readiness.
+
+Closed-world evaluator /root/slack_transport_facts verified both accepted
+findings fixed and independently ran all42 fixtures successfully. Primary
+accepted its bounded source/API evidence and independently reran the suite.
+
+A clearly labeled setup test used the installed Slack Receipts service layer
+and returned status=sent, ok=true, a private channel and message timestamp.
+This proves provider acceptance, not human readership. The durable delivery
+receipt is in ~/.local/state/chromium-stealthcdp/automation/slack-outbox/.
+Repeating the same setup invocation returned an empty send list, proving no
+new message was sent. No credentials or raw provider logs entered Git.
+
+Installed immutable generation04588a05b7987a3c794ef943e1f78c2a8ad96763.
+Existing timer remains enabled at03:00 America/Chicago. Actual systemd service
+run returned unchanged / Result=success / exit0, and its ExecStopPost notifier
+also exited0. There is still only one delivered outbox event: the setup test.
+Success/failure/rollback/deferred announcements are enabled for future upgrade
+outcomes; routine unchanged checks stay quiet. Existing GitHub issues and
+local receipts remain independent fallback evidence.
+
+Graph memory disposition forbidden: no reviewed repo group is defined. This
+plan and private service receipts provide continuity. Work is committed and
+pushed; documentation-only closeout follows the installed code commit.
