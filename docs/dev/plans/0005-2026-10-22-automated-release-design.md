@@ -1,6 +1,6 @@
 # Plan 0005: Automated update, build, publication and deployment design
 
-State: OPEN
+State: CLOSED
 
 ## Objective
 
@@ -141,3 +141,10 @@ with no material findings. It compared the consolidated design with accepted
 policies and ADRs, including the credential override and repair bounds. Primary
 accepted this bounded review; it is documentation consistency evidence, not
 implementation or runtime acceptance. Final design confirmation remains open.
+
+## Final confirmation
+
+The operator replied implement after consolidated preview aa56b5a7c287 at
+760ff54f239d187d6dadf1e947a38d24fbde2a5a. Shared understanding is confirmed;
+implementation, publication and schedule activation are authorized within the
+approved contract. Plan 0006 owns execution.

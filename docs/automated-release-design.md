@@ -1,9 +1,9 @@
 # Chromium StealthCDP automated releases
 
-Status: design decisions settled; awaiting final shared-understanding confirmation.
+Status: approved by the operator on 2026-10-22; implementation in Plan 0006.
 
 This is the consolidated design from Plan 0005's three interview rounds. It
-describes the automation to implement, not an already running updater.
+describes the approved automation contract; Plan 0006 records delivery evidence.
 
 ## Outcome
 

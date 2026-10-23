@@ -168,3 +168,9 @@ Google Storage 401, run `scripts/diagnose-windows-toolchain.sh`. The local
 fallback needs Visual Studio C++ tools and Windows SDK 10.0.26100.0 installed
 before Chromium's `depot_tools/win_toolchain/package_from_installed.py` can
 produce the toolchain zip.
+
+## Automated Linux Stable updates
+
+See [automation operations](docs/automation-operations.md) for the daily user
+service, manual triggers, qualification gates, recovery and report-only repair
+admission. The approved contract is [automated release design](docs/automated-release-design.md).
