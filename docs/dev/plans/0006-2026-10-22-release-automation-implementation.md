@@ -1,6 +1,6 @@
 # Plan 0006: Implement automated Linux Stable releases
 
-State: OPEN
+State: CLOSED
 
 ## Authority and Current State
 
@@ -75,3 +75,54 @@ Primary adjudicates:
 One bounded remediation pass addresses this consolidated finding set. Next:
 closed-world verification of D1-D3 and critical regressions, then immutable
 installation, baseline adoption/no-op service run and timer readback.
+
+## Delivery and acceptance
+
+- v1 review-remediation -> complete: outcome_progress. Independent closed-world
+  evaluator /root/review_implementation verified D1-D3 pass, independently ran
+  33 tests and found no critical remediation regressions. Primary accepted its
+  bounded evidence and independently reran all 33 tests before installation.
+- Source implementation 18268c01b03081d0e89fada03fa94a9407e5e916;
+  systemd parser readback exposed quoted WorkingDirectory as invalid. Corrected
+  to systemd %h expansion in 4e6dedd70dcaf059557440b98c0fdb4105bd5391;
+  actual systemd-analyze verification then passed. An unrelated existing
+  mail-receipts unit warning was not changed.
+- Installed immutable controller generation:
+  ~/.local/lib/chromium-stealthcdp-automation/generations/4e6dedd70dcaf059557440b98c0fdb4105bd5391.
+  Config ~/.config/chromium-stealthcdp/automation.json. Both design and source
+  implementation commits pushed to upstream/main; remote readback matched
+  4e6dedd before this documentation-only closeout.
+- Adopted public Stable156.0.8078.47 manifest digest and installed browser SHA
+  2492fd6e2bab04707c263862df5563d10eee1660253cbcc0c06af3699ecc7b9c.
+  Actual fresh installed Agent Browser selection returned webdriver=false and
+  ownedProcessesRemaining=[] for all 15 observed owned PIDs. Receipt:
+  ~/.local/state/chromium-stealthcdp/automation/baseline-acceptance.json.
+- Actual bounded systemd service run returned unchanged, exit0/Result=success;
+  no build, new tag, public release or activation was attempted. Official
+  discovery matched156.0.8078.47 / 1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775.
+- Timer enabled and active, Persistent=yes; next trigger read back as
+  Friday2026-10-23 03:00:00 CDT. Service readback: CPUQuotaPerSecUSec=8s,
+  MemoryMax=34359738368, MemorySwapMax=0, TimeoutStartUSec=12h,
+  KillMode=control-group, Nice=10, IOSchedulingClass=3. No recurring approval
+  is required for routine qualified releases within the approved contract.
+- Post-acceptance OS census found no installed/source StealthCDP executable
+  processes and none of the owned disposable processes remaining. Seven
+  same-user unrelated process executable identities were unreadable, so global
+  absence is not inferred and destructive retention conservatively defers.
+  Receipt: automation/post-acceptance-process-census.json under user state.
+- Repair admission remains explicitly report-only: installed configured model
+  access and owned timeout cleanup passed, but tool/effect isolation did not
+  qualify. No automatic repair worker/PR is claimed. The accepted fallback
+  creates a durable report and deduplicated failure issue, requiring human
+  repair review. See automation-design/repair-qualification/qualification.json.
+- Future new Stable full builds/publication are implemented and fixture-gated,
+  but not live-executed on an invented target; unchanged156 was intentionally
+  neither rebuilt nor republished. First actual new target must pass every
+  candidate/publication/installed gate before activation.
+
+All delegated implementation workers returned complete and primary inspected
+and integrated their files. No retained profile, active peer, OS browser default,
+operator source/output tree, public release history or unrelated service was
+changed. Source checkout remains clean at15a1e89. Graph memory disposition:
+forbidden; no reviewed repo group exists. Durable continuity is this source
+plan and operations guide, with raw receipts outside Git.
