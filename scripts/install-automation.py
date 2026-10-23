@@ -57,7 +57,7 @@ Type=oneshot
 ExecStart=/usr/bin/python3 {quote(current / 'scripts/automation.py')} --config {quote(config)} run
 Environment="PATH={path}"
 Environment=PYTHONDONTWRITEBYTECODE=1
-WorkingDirectory={quote(state)}
+WorkingDirectory=%h/.local/state/chromium-stealthcdp/automation
 UMask=0077
 Nice=10
 IOSchedulingClass=idle
