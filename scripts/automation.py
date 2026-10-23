@@ -345,6 +345,8 @@ class Controller:
                     atomic_json(history, prior)
                 run = dict(prior, state='active') if requeue and prior.get('context') else {
                     'id': target['run_id'], 'target': target, 'state': 'active', 'stage': 'prepare', 'created_at': time.time()}
+                if requeue:
+                    run['notification_attempt'] = prior.get('notification_attempt', 1) + 1
                 self.save(run)
             try:
                 if run['stage'] == 'prepare':
@@ -397,6 +399,7 @@ class Controller:
                 self.repair_report(run)
                 self.report(run)
                 setattr(exc, '_stealthcdp_notification', run['notification'])
+                setattr(exc, '_stealthcdp_run', run)
                 raise
 
     def repair_report(self, run):
@@ -456,11 +459,17 @@ def main():
     args = parser.parse_args()
     config = load(args.config)
     try:
+        from automation_notify import announce, Announcer
         if args.action == 'run':
+            atomic_json(Path(config['state_dir']) / 'invocation.json',
+                        {'started_at': time.time(), 'id': os.environ.get('INVOCATION_ID')})
+            announce(config, {'state': 'unchanged'})
             controller = Controller(config)
             result = controller.run(args.requeue)
+            announce(config, result)
             if (controller.root / 'pending.json').exists() and result.get('state') in TERMINAL:
                 result = controller.run()
+                announce(config, result)
         elif args.action == 'adopt':
             result = adopt(config, args.artifact)
         elif args.action == 'quarantine':
@@ -482,6 +491,10 @@ def main():
             except Exception as notification_error:
                 error_receipt['notification'] = {'delivered': False, 'error': str(notification_error)}
         atomic_json(error_path, error_receipt)
+        invocation = load(Path(config['state_dir']) / 'invocation.json', {})
+        failure_id = 'controller-check-' + str(invocation.get('id') or invocation.get('started_at', time.time()))
+        outcome = getattr(exc, '_stealthcdp_run', {'state': 'failed', 'id': failure_id, 'stage': 'preflight/discovery'})
+        announce(config, outcome)
         print(f'automation stopped: {exc}', file=sys.stderr)
         return 1
     return 0

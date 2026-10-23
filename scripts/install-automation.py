@@ -32,7 +32,8 @@ def main():
     state.mkdir(parents=True, exist_ok=True, mode=0o700)
     config = home / '.config/chromium-stealthcdp/automation.json'
     config.parent.mkdir(parents=True, exist_ok=True)
-    config.write_text(json.dumps({'schema': 'stealthcdp.automation-config.v1', 'source_repo': str(generation),
+    previous_config = json.loads(config.read_text()) if config.exists() else {}
+    config.write_text(json.dumps({**previous_config, 'schema': 'stealthcdp.automation-config.v1', 'source_repo': str(generation),
                                  'state_dir': str(state), 'depot_tools': str(args.depot_tools.resolve(strict=True)),
                                  'agent_browser': str(home / '.local/bin/agent-browser')}, indent=2) + '\n')
     config.chmod(0o600)
@@ -56,6 +57,7 @@ Wants=network-online.target
 Type=oneshot
 ExecStart=/usr/bin/python3 {quote(current / 'scripts/automation.py')} --config {quote(config)} run
 Environment="PATH={path}"
+ExecStopPost=-/usr/bin/python3 {quote(current / 'scripts/automation_notify.py')} --config {quote(config)} service-result
 Environment=PYTHONDONTWRITEBYTECODE=1
 WorkingDirectory=%h/.local/state/chromium-stealthcdp/automation
 UMask=0077

@@ -111,6 +111,24 @@ class ControllerTests(unittest.TestCase):
         self.assertIs(m.load(Path(self.config['state_dir'])/'last-error.json')['notification']['delivered'],False)
         gh.notify.assert_called_once()
 
+    def test_distinct_preflight_invocations_get_distinct_slack_failure_ids(self):
+        from unittest.mock import Mock
+        import automation_notify
+        config_path=self.root/'config.json'
+        m.atomic_json(config_path,self.config)
+        controller=Mock()
+        controller.run.side_effect=RuntimeError('offline')
+        gh=self.github()
+        with patch.object(m,'Controller',return_value=controller), \
+             patch.object(m,'GitHub',return_value=gh), \
+             patch.object(automation_notify,'announce') as notify, \
+             patch.object(sys,'argv',['automation','--config',str(config_path),'run']):
+            for invocation in ('one','two'):
+                with patch.dict(m.os.environ,{'INVOCATION_ID':invocation}):
+                    self.assertEqual(m.main(),1)
+        failures=[c.args[1] for c in notify.call_args_list if c.args[1].get('state')=='failed']
+        self.assertEqual({v['id'] for v in failures},{'controller-check-one','controller-check-two'})
+
     def test_publication_requires_approved_remote_before_any_effect(self):
         with patch.object(m,'command',return_value='/local/clone'):
             with self.assertRaisesRegex(RuntimeError,'remote is outside'):

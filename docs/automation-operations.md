@@ -97,3 +97,26 @@ establish isolation from all local control sockets and effect credentials.
 No Codex repair worker is launched. A deduplicated local repair report and
 failure issue preserve the target for a human-reviewed repair. This is the
 approved fallback, not a claim that automatic repair drafting is operational.
+
+## Private Slack upgrade announcements
+
+Optional `slack` settings in the private controller configuration enable
+operator-selected workspace/recipient delivery. Routing stays outside Git.
+The notifier uses the installed Slack Receipts service layer and its existing
+credential configuration; it does not create or borrow another integration's
+HTTP machine credential. Sends require recipient readiness and a resolved
+identity binding. A delivery receipt must include Slack provider acceptance,
+channel and message timestamp; this is not proof that the recipient read it.
+
+Successful upgrades, failures, restored activations, resource deferrals and
+waiting/stopped outcomes produce curated notices. Daily `unchanged` checks are
+quiet. Systemd `ExecStopPost` covers service timeout/abnormal termination even
+when the controller cannot reach its normal failure handler. Notification
+failure does not roll back or fail a qualified browser update.
+
+The durable private `slack-outbox/` records each logical outcome before sending.
+A repeated invocation reuses its idempotency key and original recipient. The
+installed service reconciles that key; an existing failed/pending action does
+not silently become a fresh send. Unconfirmed actions stay in the outbox for
+readback on later checks, with no automatic new-key resend. If Slack is
+unavailable, the existing GitHub failure issue and local receipts remain.
