@@ -1,6 +1,6 @@
 # Plan 0008: Diagnose candidate browser qualification failure
 
-State: OPEN
+State: CLOSED
 
 ## Current State
 
@@ -61,3 +61,35 @@ hash against rebuilt output without replacing it, then reruns qualification.
 routing/custody and ran8 deployment tests, no material findings. Primary accepts
 its bounded evidence; new recovery guard review pending. No debug logging or
 throwaway source artifacts retained.
+
+## Closeout
+
+Independent closed-world follow-up /root/review_selection_fix accepted the
+recovery guard and independently ran45 tests successfully, no blocking findings.
+Primary inspected/adjudicated and accepts this bounded evidence; no broader
+Agent Browser repository changes were made. Cleanup custody refusal test also
+passes. No DEBUG instrumentation remains.
+
+Fix committed/pushed and installed as immutable generation
+ ddd2b1b812ecfeba828c586f83be09717fc6f71f. The commit records the correct
+hypothesis: shared Agent Browser startup configuration overrode candidate
+selection; private candidate runtime fixes routing without weakening the hash
+check. Both operator worktrees remain clean; all16 fixed live-probe process
+executable identities are gone on fresh /proc readback.
+
+One explicitly bounded recovery ran in transient systemd unit
+chromium-stealthcdp-recovery-20261028, invocation
+cbf25472d2854bd8b1f4667b1e6905ee, retaining8CPU/32GiB/12h limits. It did not
+rebuild or republish: current headroom was25967304704bytes available memory
+(24.2GiB), below32GiB, with530227597312bytes disk free. Result was deferred,
+service exit0. Latest official Stable remained156.0.8078.73 at the pinned SHA.
+A subsequent scheduled check can resume when headroom permits; no failed-target
+flag now blocks that resource-deferred run. Slack provider accepted the private
+SoyLei deferral notice; action5853, exact private route retained outside Git.
+Installed156.0.8078.47 remains active; no deployment/profile changes occurred.
+
+Bugfix acceptance is complete: original live qualification now selects the
+candidate exact hash and webdriver=false, private runtime cleanup is verified,
+regressions pass and installed controller contains fixes. Completion of the
+browser upgrade itself remains deferred by the unchanged resource gate.
+Graph memory disposition forbidden: no reviewed repository group is defined.
