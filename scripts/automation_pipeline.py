@@ -344,15 +344,22 @@ class CandidatePipeline:
         if smoke_data.get('success') is not True or smoke_data.get('checks', {}).get('navigatorWebdriver') != 'false':
             raise PipelineError('Active-CDP webdriver qualification failed')
         stage = Path(context['run_root']) / 'artifacts'
-        self.command(context, [Path(context['patchset']) / 'scripts/promote-artifact.sh', '--src-out', out,
-                               '--artifact-root', stage, '--smoke-json', smoke])
-        artifact = (stage / 'current').resolve(strict=True)
+        artifact = stage / f'{context["version"]}+stealthcdp.{context["patch_queue_sha256"][:12]}'
+        if artifact.is_symlink():
+            raise PipelineError('Staged candidate must be an owned directory, not a symlink')
+        if not artifact.exists():
+            self.command(context, [Path(context['patchset']) / 'scripts/promote-artifact.sh', '--src-out', out,
+                                   '--artifact-root', stage, '--smoke-json', smoke])
+        # An interrupted qualification may have already promoted this immutable
+        # candidate. Reconcile its provenance below, never overwrite/rebuild it.
+        artifact = artifact.resolve(strict=True)
         context['artifact'] = str(artifact)
         manifest = json.loads((artifact / 'manifest.json').read_text())
         if (manifest['chromium']['upstreamRevision'] != context['upstream_revision'] or
             manifest['chromium']['sourceSha'] != context['source_sha'] or
             manifest['patchset']['patchQueueSha256'] != context['patch_queue_sha256'] or
             manifest['chromium']['dirty'] or manifest['patchset']['dirty'] or
+            sha256(out / 'chrome') != manifest['executable']['sha256'] or
             sha256(artifact / manifest['executable']['relativePath']) != manifest['executable']['sha256']):
             raise PipelineError('Staged provenance mismatch')
         self.command(context, [self.repo / 'scripts/smoke.sh', '--chrome', artifact / manifest['executable']['relativePath'],

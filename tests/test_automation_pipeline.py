@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / 'scripts'
 sys.path.insert(0, str(SCRIPTS))
@@ -85,6 +86,43 @@ class PipelineSafetyTests(unittest.TestCase):
         with self.assertRaises(PipelineError):
             pipeline.fetch(context, ['git', 'fetch', 'origin'])
         self.assertEqual(len(calls), 1)
+
+    def test_qualification_resume_reuses_existing_staged_candidate(self):
+        src=self.base/'src'
+        out=src/'out/test'
+        out.mkdir(parents=True)
+        from automation_pipeline import GN_ARGS
+        (out/'args.gn').write_text(GN_ARGS)
+        evidence=self.base/'run/evidence'
+        evidence.mkdir(parents=True)
+        artifact=self.base/'run/artifacts/156.0.8078.47+stealthcdp.queue'
+        (artifact/'chrome-linux').mkdir(parents=True)
+        (artifact/'chrome-linux/chrome').write_bytes(b'accepted executable')
+        (out/'chrome').write_bytes(b'accepted executable')
+        manifest={'chromium':{'upstreamRevision':'base','sourceSha':'source','dirty':False},
+                  'patchset':{'patchQueueSha256':'queue','dirty':False},
+                  'executable':{'relativePath':'chrome-linux/chrome','sha256':sha256(artifact/'chrome-linux/chrome')}}
+        (artifact/'manifest.json').write_text(json.dumps(manifest))
+        (artifact.parent/'current').symlink_to(artifact.name)
+        context={'stage':'built','src':str(src),'out':'out/test','version':'156.0.8078.47',
+                 'evidence':str(evidence),'run_root':str(self.base/'run'),'patchset':str(self.repo),
+                 'upstream_revision':'base','source_sha':'source','patch_queue_sha256':'queue',
+                 'required_regressions':['LineBreakerTest.BreakWordWithReusedShapeResult'],
+                 'browser_pgo':{},'gn_args_sha256':'args','v8_revision':'v8'}
+        def command(ctx,args,**kwargs):
+            if str(args[0]).endswith('promote-artifact.sh'):
+                raise PipelineError('artifact already exists')
+            if '--version' in args:return 'Chromium 156.0.8078.47'
+            if str(args[0]).endswith('blink_unittests'):
+                (evidence/'line-breaker.xml').write_text('<testsuites><testcase classname="LineBreakerTest" name="BreakWordWithReusedShapeResult"/></testsuites>')
+            if str(args[0]).endswith('smoke.sh'):
+                Path(args[-1]).write_text(json.dumps({'success':True,'checks':{'navigatorWebdriver':'false'}}))
+            return ''
+        with patch.object(self.pipeline,'check_source'),patch.object(self.pipeline,'command',side_effect=command), \
+             patch('automation_deploy.qualify_agent_browser',return_value={'success':True}):
+            result=self.pipeline.qualify(context)
+        self.assertEqual(result['stage'],'qualified')
+        self.assertEqual(Path(result['artifact']),artifact)
 
     def test_packaging_requires_qualified_candidate(self):
         with self.assertRaisesRegex(PipelineError, 'Only qualified'):

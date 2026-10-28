@@ -97,9 +97,46 @@ class DeploymentTests(unittest.TestCase):
         self.assertTrue((self.root / 'old').exists())
         self.assertTrue((self.root / '5').exists())
 
+    def test_private_cleanup_refuses_process_without_exact_socket_environment(self):
+        import os
+        runtime=self.root/'runtime'
+        runtime.mkdir()
+        (runtime/'runtime-host.pid').write_text(str(os.getpid()))
+        with patch.object(m.os,'kill') as kill:
+            with self.assertRaisesRegex(m.DeploymentError,'identity could not be proved'):
+                m._stop_private_runtime({'AGENT_BROWSER_SOCKET_DIR':str(runtime)})
+        kill.assert_not_called()
+
+    def test_candidate_selection_uses_private_runtime_instead_of_shared_installed_browser(self):
+        selected = {}
+        candidate = self.candidate / 'chrome-linux/chrome'
+        expected = self.manifest['executable']['sha256']
+        real_hash = m.sha256
+        def run(argv, **kwargs):
+            if argv[-1] == '--version':
+                return SimpleNamespace(stdout='Chromium 2\n', returncode=0)
+            env=kwargs['env']
+            if argv[-2:] == ['open', 'about:blank']:
+                # Stateful Agent Browser routing: a unique session still maps to
+                # the existing shared runtime unless its socket is isolated.
+                selected['private']=bool(env.get('AGENT_BROWSER_SOCKET_DIR'))
+                selected['hash']=expected if selected['private'] else 'installed-browser-sha'
+            data={}
+            if argv[-2:] == ['get','browser-pid']: data={'pid':2147483647}
+            elif 'eval' in argv: data={'result':'{"webdriver":false,"userAgent":"fixture"}'}
+            return SimpleNamespace(stdout=json.dumps({'success':True,'data':data}),stderr='',returncode=0)
+        def hash_file(path):
+            return selected['hash'] if str(path).startswith('/proc/') else real_hash(path)
+        with patch.object(m.subprocess,'run',side_effect=run), \
+             patch.object(m,'sha256',side_effect=hash_file), \
+             patch.object(m.os,'readlink',return_value=str(candidate)):
+            receipt=m.qualify_agent_browser(candidate,self.manifest,config_path=self.config)
+        self.assertTrue(receipt['success'])
+        self.assertTrue(selected['private'])
+
     def test_wrong_selected_binary_closes_only_unique_disposable_session(self):
         commands = []
-        def command(argv, timeout=90):
+        def command(argv, timeout=90, runtime_env=None):
             commands.append(argv)
             if argv[-2:] == ['get', 'browser-pid']:
                 return {'pid': 2147483647}
@@ -109,7 +146,7 @@ class DeploymentTests(unittest.TestCase):
              patch.object(m, 'sha256', side_effect=[self.manifest['executable']['sha256'], 'wrong']), \
              patch.object(m.os, 'readlink', return_value='/unexpected/chrome'):
             with self.assertRaisesRegex(m.DeploymentError, 'does not match'):
-                m.qualify_agent_browser(self.candidate / 'chrome-linux/chrome', self.manifest, config_path=self.config)
+                m.qualify_agent_browser(self.candidate / 'chrome-linux/chrome', self.manifest, config_path=self.config, installed=True)
         self.assertEqual(commands[-1][-1], 'close')
         self.assertNotIn('--all', commands[-1])
         self.assertIn('--session', commands[-1])

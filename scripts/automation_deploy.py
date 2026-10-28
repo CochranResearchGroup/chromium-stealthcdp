@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import tempfile
 import time
@@ -65,14 +66,21 @@ def bind_config(config, root, manifest):
     return config
 
 
-def _command(argv, timeout=90):
+def _command(argv, timeout=90, runtime_env=None):
     env = dict(os.environ)
     for key in ('AGENT_BROWSER_RUNTIME_PROFILE', 'AGENT_BROWSER_PROFILE', 'AGENT_BROWSER_CDP',
                 'AGENT_BROWSER_AUTO_CONNECT', 'AGENT_BROWSER_EXECUTABLE_PATH', 'AGENT_BROWSER_CONFIG'):
         env.pop(key, None)
+    if runtime_env:
+        env.update(runtime_env)
     result = subprocess.run(argv, text=True, capture_output=True, timeout=timeout, env=env)
     if result.returncode:
-        raise DeploymentError('Agent Browser command failed: ' + ' '.join(argv[-2:]) + ': ' + result.stderr[-2000:])
+        try:
+            detail = str(json.loads(result.stdout).get('error', ''))
+        except ValueError:
+            detail = result.stderr[-2000:]
+        raise DeploymentError('Agent Browser command failed: ' + ' '.join(argv[-2:]) + ': ' + detail)
+
     try:
         value = json.loads(result.stdout)
     except ValueError as exc:
@@ -114,6 +122,31 @@ def _tree_alive(owned):
     return alive
 
 
+def _stop_private_runtime(runtime_env):
+    """Stop only a fresh daemon proving custody of this private socket directory."""
+    socket_dir = Path(runtime_env['AGENT_BROWSER_SOCKET_DIR'])
+    owned = {}
+    for file in socket_dir.glob('*.pid'):
+        try:
+            pid = int(file.read_text().strip())
+            process = Path('/proc') / str(pid)
+            environment = (process / 'environ').read_bytes().split(b'\0')
+            expected = ('AGENT_BROWSER_SOCKET_DIR=' + str(socket_dir)).encode()
+            if process.stat().st_uid != os.getuid() or expected not in environment:
+                raise DeploymentError('Private runtime identity could not be proved; no process signalled')
+            tree = _owned_tree(pid)
+            owned.update(tree)
+            if pid in tree and pid in _tree_alive({pid: tree[pid]}):
+                os.kill(pid, signal.SIGTERM)
+        except (FileNotFoundError, ProcessLookupError):
+            continue
+    for _ in range(50):
+        if not _tree_alive(owned):
+            return {'ownedProcessIds': sorted(owned), 'ownedProcessesRemaining': []}
+        time.sleep(.1)
+    raise DeploymentError('Private qualification runtime did not exit; custody retained')
+
+
 def qualify_agent_browser(executable: Path, manifest: dict, *, agent_browser='agent-browser',
                           config_path: Path | None = None, installed=False):
     """Prove selected binary and webdriver through active CDP, then close only our session."""
@@ -136,6 +169,17 @@ def qualify_agent_browser(executable: Path, manifest: dict, *, agent_browser='ag
             config = bind_config(config, executable.parents[len(Path(manifest['executable']['relativePath']).parts)-1], manifest)
         atomic_json(test_config, config)
         base = [str(agent_browser), '--config', str(test_config), '--session', session, '--json']
+        runtime_env = None
+        if not installed:
+            private_home = Path(work) / 'home'
+            private_home.mkdir()
+            (Path(work) / 'empty.env').touch()
+            runtime_env = {'HOME': str(private_home), 'AGENT_BROWSER_HOME': str(private_home / '.agent-browser'),
+                           'AGENT_BROWSER_SOCKET_DIR': str(Path(work) / 'runtime'),
+                           'AGENT_BROWSER_RUNTIME_HOST': '1', 'AGENT_BROWSER_IDLE_TIMEOUT_MS': '60000',
+                           'AGENT_BROWSER_ENV_FILE': str(Path(work) / 'empty.env')}
+        def command(args):
+            return _command(args, runtime_env=runtime_env) if runtime_env else _command(args)
         pid = None
         owned = {}
         receipt = {'session': session, 'expectedSha256': expected, 'version': version}
@@ -144,15 +188,16 @@ def qualify_agent_browser(executable: Path, manifest: dict, *, agent_browser='ag
             launch = base + ['--browser-build', 'stealthcdp_chromium', '--browser-host', 'local_headless', '--headed', 'false']
             if not installed:
                 launch += ['--executable-path', str(executable)]
-            _command(launch + ['open', 'about:blank'])
-            pid = int(_command(base + ['get', 'browser-pid'])['pid'])
+            command(launch + ['open', 'about:blank'])
+            pid = int(command(base + ['get', 'browser-pid'])['pid'])
             proc_exe = Path('/proc') / str(pid) / 'exe'
             owned = _owned_tree(pid)
             actual = os.readlink(proc_exe)
             actual_hash = sha256(proc_exe)
+            receipt.update(pid=pid, executable=actual, executableSha256=actual_hash)
             if actual_hash != expected:
                 raise DeploymentError('Fresh selected browser binary does not match qualified artifact')
-            observation = _command(base + ['eval', 'JSON.stringify({webdriver:navigator.webdriver,userAgent:navigator.userAgent})'])
+            observation = command(base + ['eval', 'JSON.stringify({webdriver:navigator.webdriver,userAgent:navigator.userAgent})'])
             # CLI eval wraps its JavaScript return value as data.result.
             if isinstance(observation, dict) and 'result' in observation:
                 observation = observation['result']
@@ -168,8 +213,11 @@ def qualify_agent_browser(executable: Path, manifest: dict, *, agent_browser='ag
             try:
                 if pid:
                     owned.update(_owned_tree(pid))
-                closed = _command(base + ['close'])
-                receipt['close'] = closed
+                if runtime_env:
+                    receipt['privateRuntimeCleanup'] = _stop_private_runtime(runtime_env)
+                    receipt['close'] = {'disposition': 'private_runtime_closed'}
+                else:
+                    receipt['close'] = command(base + ['close'])
                 # close can return before the OS has reaped the owned browser.
                 if pid:
                     for _ in range(50):
