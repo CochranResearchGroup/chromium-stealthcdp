@@ -1,4 +1,4 @@
-From 15a1e89ace187947b2a39881b45f4de992157b56 Mon Sep 17 00:00:00 2001
+From 45913b1f9f32477459c5880c5fc69bf9d8204583 Mon Sep 17 00:00:00 2001
 From: Eric W Cochran <ecochran76@ewc2.cbe.iastate.edu>
 Date: Thu, 13 Aug 2026 17:06:02 -0500
 Subject: [PATCH 2/2] Fix stale shape result during line overflow
@@ -10,7 +10,7 @@ Subject: [PATCH 2/2] Fix stale shape result during line overflow
  3 files changed, 66 insertions(+)
 
 diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker.cc b/third_party/blink/renderer/core/layout/inline/line_breaker.cc
-index e126e872ddb..2c90a3c4d48 100644
+index e126e872ddbdf..2c90a3c4d4880 100644
 --- a/third_party/blink/renderer/core/layout/inline/line_breaker.cc
 +++ b/third_party/blink/renderer/core/layout/inline/line_breaker.cc
 @@ -1700,9 +1700,19 @@ LineBreaker::BreakResult LineBreaker::BreakText(
@@ -34,7 +34,7 @@ index e126e872ddb..2c90a3c4d48 100644
      }
      DCHECK_EQ(shape_result->NumCharacters(),
 diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker.h b/third_party/blink/renderer/core/layout/inline/line_breaker.h
-index 507c26b5dae..6e8a391dfdc 100644
+index 507c26b5dae2f..6e8a391dfdcc0 100644
 --- a/third_party/blink/renderer/core/layout/inline/line_breaker.h
 +++ b/third_party/blink/renderer/core/layout/inline/line_breaker.h
 @@ -117,6 +117,13 @@ class CORE_EXPORT LineBreaker {
@@ -62,7 +62,7 @@ index 507c26b5dae..6e8a391dfdc 100644
    bool force_non_empty_if_last_line_ = false;
  
 diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc b/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
-index c15c1dc258d..6498e79ff48 100644
+index c15c1dc258d7b..6498e79ff48a2 100644
 --- a/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
 +++ b/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
 @@ -141,6 +141,16 @@ class LineBreakerTest : public RenderingTest {
