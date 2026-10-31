@@ -98,6 +98,36 @@ class ControllerTests(unittest.TestCase):
         deploy.assert_called_once()
         self.assertEqual(first['context']['patchset_repo'],context['patchset'])
 
+    def test_cleanup_runs_after_durable_deployment_and_does_not_fail_it(self):
+        from unittest.mock import Mock
+        gh = self.github()
+        gh.integrate.return_value = {'source_commit': 'b'*40}
+        gh.publish.return_value = {'tag': 'fixture'}
+        context = {'artifact': str(self.root/'artifact'), 'patchset': str(self.root/'exported'),
+                   'patch_queue_sha256': m.patch_digest(self.root/'source')}
+        factory = Mock()
+        factory.return_value.run.return_value = context
+        deploy = Mock(return_value={'status': 'committed'})
+        controller = m.Controller(self.config, github=gh, discover_fn=lambda: dict(self.target),
+                                  pipeline_factory=factory, deploy_fn=deploy)
+        calls = []
+        def cleanup():
+            baseline = m.load(controller.root/'baseline.json', {})
+            calls.append(baseline.get('run_id'))
+            if len(calls) == 2:
+                self.assertEqual(m.load(controller.root/'runs'/baseline['run_id']/'run.json')['state'], 'complete')
+                raise OSError('cleanup receipt storage failure')
+            return {}
+        with patch.object(m, 'command', side_effect=self.fake_command), \
+             patch.object(m, 'headroom', return_value={'ready': True}), \
+             patch.object(controller, 'maintain', side_effect=cleanup):
+            result = controller.run()
+        self.assertEqual(result['state'], 'complete')
+        self.assertEqual(len(calls), 2)
+        self.assertFalse((controller.root/'deployment-stopped.json').exists())
+        gh.notify.assert_not_called()
+        deploy.assert_called_once()
+
     def test_preflight_failure_records_undelivered_after_prior_run(self):
         from unittest.mock import Mock
         config_path=self.root/'config.json'

@@ -69,8 +69,20 @@ runtime output.
 | Run duration | Twelve hours |
 | Free-disk reserve | 200 GiB |
 | I/O | Low priority |
-| Local good releases | Active, previous and one additional release |
+| Local good installed releases | Active, previous and one additional release |
+| Completed build intermediates | Retire after committed installed acceptance; installed rollback copies remain |
+| Superseded terminal output | Retire after a newer committed deployment; retain newest failure and unfinished runs |
 | Logs | Ninety days, plus retained latest-failure evidence |
+
+Retention runs at cycle startup and immediately after a committed deployment,
+after its baseline and run receipt are durable. Candidate artifacts, packages,
+and automation-owned `out/Automation-<run>` trees are intermediates, distinct
+from installed rollback releases. A terminal run is superseded only by a newer
+committed, accepted deployment. Cleanup errors are recorded in `retention.json`
+and do not change a successful deployment into a failure. Unreadable same-user
+process identities defer removal; live executable, cwd, open-file and mapping
+references, selected staging paths, symlink traversal and mounts protect output.
+Operator-managed `../src/out` and `../artifacts` are never covered by this policy.
 
 Defer a build when headroom is insufficient. Resource exhaustion fails the
 candidate without changing the installed browser. Retention deletes only

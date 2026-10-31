@@ -290,6 +290,17 @@ class Controller:
             run['notification'] = {'delivered': False, 'error': str(exc)}
         self.save(run)
 
+    def maintain(self):
+        """Cleanup failure must never undo a committed deployment verdict."""
+        from automation_retention import maintain
+        installed_root = Path(self.config.get('installed_root', str(Path.home() / '.local/share/chromium-stealthcdp')))
+        try:
+            result = maintain(self.root, installed_root) if installed_root.exists() else {'skipped': 'installed root absent'}
+        except Exception as exc:
+            result = {'status': 'failed', 'error': str(exc)}
+        atomic_json(self.root / 'retention.json', result)
+        return result
+
     def run(self, requeue=False):
         with (self.root / 'controller.lock').open('a+') as lock:
             try:
@@ -302,10 +313,7 @@ class Controller:
             if (self.root / 'deployments/deployment-halted.json').exists():
                 return {'state': 'stopped', 'reason': 'deployment rollback requires investigation'}
             self.github.preflight()
-            from automation_retention import maintain
-            installed_root = Path(self.config.get('installed_root', str(Path.home() / '.local/share/chromium-stealthcdp')))
-            if installed_root.exists():
-                atomic_json(self.root / 'retention.json', maintain(self.root, installed_root))
+            self.maintain()
             # Read approved queue from remote main without mutating the installed code.
             queue_repo = self.root / 'approved-source'
             if not queue_repo.exists():
@@ -384,6 +392,13 @@ class Controller:
                         'version': run['target']['version'], 'patch_queue_sha256': run['context']['patch_queue_sha256'],
                         'publication': run['publication'], 'deployment': run['deployment'], 'run_id': run['id']})
                     self.save(run)
+                    # The committed deployment and baseline are durable before cleanup.
+                    try:
+                        run['retention'] = self.maintain()
+                        self.save(run)
+                    except Exception as exc:
+                        # Even receipt I/O failure cannot roll back a committed browser.
+                        run['retention'] = {'status': 'failed', 'error': str(exc)}
                 return run
             except AwaitingChecks as exc:
                 run['state'], run['waiting_reason'] = 'awaiting_checks', str(exc)
