@@ -301,6 +301,15 @@ class Controller:
         atomic_json(self.root / 'retention.json', result)
         return result
 
+    def cleanup(self):
+        """Local retention only; never fetch, publish, deploy, or notify."""
+        with (self.root / 'controller.lock').open('a+') as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return {'state': 'busy', 'removed': []}
+            return self.maintain()
+
     def run(self, requeue=False):
         with (self.root / 'controller.lock').open('a+') as lock:
             try:
@@ -411,6 +420,13 @@ class Controller:
                     atomic_json(self.root / 'deployment-stopped.json', {'id': run['id'], 'error': str(exc)})
                     run['state'] = 'rolled_back' if getattr(exc, 'receipt', {}).get('status') == 'rolled_back' else 'failed'
                 self.save(run)
+                # Packaged publication/integration failures can release compile
+                # trees without retrying providers or losing retry assets.
+                try:
+                    run['retention'] = self.maintain()
+                    self.save(run)
+                except Exception:
+                    pass  # Preserve the original failure and its recovery state.
                 self.repair_report(run)
                 self.report(run)
                 setattr(exc, '_stealthcdp_notification', run['notification'])
@@ -466,6 +482,7 @@ def main():
     run = sub.add_parser('run')
     run.add_argument('--requeue', action='store_true')
     sub.add_parser('status')
+    sub.add_parser('cleanup')
     baseline = sub.add_parser('adopt')
     baseline.add_argument('--artifact', required=True, type=Path)
     quarantine = sub.add_parser('quarantine')
@@ -473,6 +490,14 @@ def main():
     quarantine.add_argument('--confirmed-defect', required=True)
     args = parser.parse_args()
     config = load(args.config)
+    if args.action == 'cleanup':
+        try:
+            result = Controller(config).cleanup()
+            print(json.dumps(result, indent=2))
+            return int(result.get('status') == 'failed')
+        except Exception as exc:
+            print(f'cleanup deferred: {exc}', file=sys.stderr)
+            return 1
     try:
         from automation_notify import announce, Announcer
         if args.action == 'run':

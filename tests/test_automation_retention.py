@@ -151,5 +151,59 @@ class RetentionTests(unittest.TestCase):
         finally:
             os.chdir(before)
 
+    def packaged_failure(self, identity='publication', stage='publish'):
+        import hashlib
+        paths = self.record(identity, 'failed')
+        artifact = paths[0] / 'candidate'
+        artifact.mkdir()
+        (artifact / 'chrome').write_bytes(b'browser')
+        (artifact / 'manifest.json').write_text(json.dumps({'executable': {
+            'relativePath': 'chrome', 'sha256': hashlib.sha256(b'browser').hexdigest()}}))
+        asset = paths[1] / 'payload'
+        receipt = self.state / 'runs' / identity / 'run.json'
+        record = json.loads(receipt.read_text())
+        record.update(stage=stage, context={'stage': 'packaged', 'qualification': {'line_breaker_tests': 43},
+            'artifact': str(artifact), 'packages': [str(asset)],
+            'package_sha256': {str(asset): hashlib.sha256(asset.read_bytes()).hexdigest()}})
+        receipt.write_text(json.dumps(record))
+        return paths
+
+    def test_publication_failure_retires_only_compile_tree_and_preserves_retry(self):
+        paths = self.packaged_failure()
+        result = m.maintain(self.state, self.installed)
+        self.assertEqual(result['removed'], [str(paths[2])])
+        self.assertTrue(paths[0].exists())
+        self.assertTrue(paths[1].exists())
+        self.assertTrue((self.state / 'runs/publication/run.json').exists())
+
+    def test_failed_retry_with_changed_package_or_artifact_keeps_compile_tree(self):
+        for changed in ('package', 'artifact'):
+            with self.subTest(changed=changed):
+                paths = self.packaged_failure(changed)
+                target = paths[1]/'payload' if changed == 'package' else paths[0]/'candidate/chrome'
+                target.write_bytes(b'changed')
+                m.maintain(self.state, self.installed)
+                self.assertTrue(paths[2].exists())
+
+    def test_failed_compile_and_deployment_preserve_latest_output(self):
+        for stage in ('prepare', 'deploy'):
+            with self.subTest(stage=stage):
+                paths = self.packaged_failure(stage, stage)
+                m.maintain(self.state, self.installed)
+                self.assertTrue(paths[2].exists())
+
+    def test_complete_privileged_reference_scan_protects_mapped_or_open_files(self):
+        patch.stopall()
+        path = self.builds / 'referenced'
+        path.mkdir()
+        for kind in ('exe', 'cwd', 'fd', 'maps'):
+            with self.subTest(kind=kind), patch.object(m, 'inspect_live_versions', return_value={
+                    'unknownPids': [], 'processes': [], 'referenceScanComplete': True,
+                    'references': [{'kind': kind, 'path': str(path/'file')}]}):
+                self.assertTrue(m._in_use(path, self.builds))
+        with patch.object(m, 'inspect_live_versions', return_value={
+                'unknownPids': [], 'processes': [], 'referenceScanComplete': True, 'references': []}):
+            self.assertFalse(m._in_use(path, self.builds))
+
 if __name__ == '__main__':
     unittest.main()

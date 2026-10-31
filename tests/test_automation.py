@@ -170,6 +170,41 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(m.load(path)['version'],'156.0.8078.47')
         self.assertEqual(path.stat().st_mode & 0o777,0o600)
 
+    def test_cleanup_has_no_provider_or_notification_effects(self):
+        import automation_notify
+        config_path = self.root/'config.json'
+        m.atomic_json(config_path, self.config)
+        with patch.object(m.Controller, 'maintain', return_value={'removed': []}) as maintain, \
+             patch.object(m, 'command') as command, patch.object(m.GitHub, 'preflight') as preflight, \
+             patch.object(automation_notify, 'announce') as announce, \
+             patch.object(sys, 'argv', ['automation', '--config', str(config_path), 'cleanup']):
+            self.assertEqual(m.main(), 0)
+        maintain.assert_called_once()
+        command.assert_not_called()
+        preflight.assert_not_called()
+        announce.assert_not_called()
+
+    def test_cleanup_failure_does_not_notify_or_requeue(self):
+        import automation_notify
+        config_path = self.root/'config.json'
+        m.atomic_json(config_path, self.config)
+        with patch.object(m.Controller, 'cleanup', side_effect=RuntimeError('probe unavailable')), \
+             patch.object(m.GitHub, 'notify') as notify, \
+             patch.object(automation_notify, 'announce') as announce, \
+             patch.object(sys, 'argv', ['automation', '--config', str(config_path), 'cleanup']):
+            self.assertEqual(m.main(), 1)
+        notify.assert_not_called()
+        announce.assert_not_called()
+
+    def test_cleanup_defers_while_upgrade_lock_is_held(self):
+        import fcntl
+        controller = m.Controller(self.config)
+        with (controller.root/'controller.lock').open('a+') as lock, \
+             patch.object(controller, 'maintain') as maintain:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.assertEqual(controller.cleanup()['state'], 'busy')
+        maintain.assert_not_called()
+
     def test_stable_discovery_rejects_unpinned_identity(self):
         with self.assertRaises(ValueError):
             m.discover(lambda:[{'version':'latest','hashes':{'chromium':'bad'}}])

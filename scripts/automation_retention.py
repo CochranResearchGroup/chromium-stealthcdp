@@ -1,5 +1,6 @@
 """Retire verified deployed/superseded intermediates; preserve installed recovery."""
 import json
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -37,6 +38,8 @@ def _in_use(path, builds):
     live = inspect_live_versions(builds)
     if live['unknownPids']:
         return True
+    if live.get('referenceScanComplete'):
+        return any(Path(row['path']).is_relative_to(path) for row in live['references'])
     if any(Path(p['executable']).is_relative_to(path) for p in live['processes']):
         return True
     # A compiler can execute outside builds while its cwd/output FD is inside it.
@@ -71,6 +74,41 @@ def _committed(record):
     deployment = record.get('deployment') or {}
     return (record.get('state') == 'complete' and deployment.get('status') == 'committed'
             and deployment.get('acceptance', {}).get('success') is True)
+
+
+def _packaged_retry(record, candidate, builds):
+    """A post-qualification failure needs packages/artifact, not compiler output."""
+    context = record.get('context') or {}
+    if (record.get('state') != 'failed' or record.get('stage') not in ('integrate', 'publish')
+            or context.get('stage') != 'packaged' or not context.get('qualification')):
+        return False
+    packages = candidate / 'packages'
+    artifact = Path(context.get('artifact', '/'))
+    if (not _safe_path(packages, builds) or not artifact.is_relative_to(candidate / 'artifacts')
+            or not _safe_path(artifact, builds)):
+        return False
+    hashes = context.get('package_sha256') or {}
+    assets = context.get('packages') or []
+    if not assets or set(assets) != set(hashes):
+        return False
+    for name, expected in hashes.items():
+        path = Path(name)
+        if (path.parent != packages or path.is_symlink() or not path.is_file()
+                or not re.fullmatch('[0-9a-f]{64}', str(expected))):
+            return False
+        with path.open('rb') as stream:
+            if hashlib.file_digest(stream, 'sha256').hexdigest() != expected:
+                return False
+    # Deployment consumes this artifact; preserve it and verify its executable.
+    manifest_path = artifact / 'manifest.json'
+    if manifest_path.is_symlink():
+        return False
+    manifest = json.loads(manifest_path.read_text())
+    executable = artifact / manifest['executable']['relativePath']
+    if not executable.resolve().is_relative_to(artifact) or executable.is_symlink():
+        return False
+    with executable.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest() == manifest['executable']['sha256']
 
 
 def maintain(state_dir: Path, installed_root: Path, now=None):
@@ -111,6 +149,11 @@ def maintain(state_dir: Path, installed_root: Path, now=None):
         if (deployed or superseded) and record['id'] != latest_failure:
             paths = [candidate / 'artifacts', candidate / 'packages',
                      builds / 'checkout/src/out' / f'Automation-{record["id"]}']
+        elif _packaged_retry(record, candidate, builds):
+            paths = [builds / 'checkout/src/out' / f'Automation-{record["id"]}']
+        else:
+            paths = []
+        if paths:
             for path in paths:
                 if not path.exists() and not path.is_symlink():
                     continue
