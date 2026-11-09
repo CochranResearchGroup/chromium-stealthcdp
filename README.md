@@ -19,8 +19,9 @@ The current queue is a Chromium `157.0.8103.38` repair proposal pinned by
 `upstream-revision.txt`. Its source branch is
 `repair/chromium-157-patch-replay` in the isolated worktree at
 `~/.local/state/chromium-stealthcdp/patch-repair-157/source`.
-It has not yet completed compiled browser qualification; see
-[Plan 0011](docs/dev/plans/0011-2026-11-09-chromium-157-patch-repair.md).
+A separate DCHECK-enabled candidate passed all 43 LineBreaker tests and CDP
+smoke; see [Plan 0012](docs/dev/plans/0012-2026-11-09-chromium-157-build-qualification.md).
+Approved-queue integration and updater requeue remain separate gates.
 
 ## Export
 

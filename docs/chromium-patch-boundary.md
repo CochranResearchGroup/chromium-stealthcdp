@@ -43,9 +43,11 @@ downstream unconditional stale-shape invariant with the existing seeded
 `BreakWordWithReusedShapeResult` regression and DCHECK consistency check.
 Patch 0002 replaces the upstream feature-guarded clear with unconditional
 clearing, preserving downstream behavior even with runtime feature overrides.
-Its testing hook and regression remain unchanged. This is a source-level
-repair proposal; Chromium compilation, focused DCHECK-enabled tests and CDP
-smoke must qualify the candidate before release or activation. See
+Its testing hook and regression remain unchanged. The candidate completed
+Chromium compilation, all 43 focused DCHECK-enabled LineBreaker tests and CDP
+smoke under [Plan 0012](dev/plans/0012-2026-11-09-chromium-157-build-qualification.md).
+Approved-queue integration, publication and activation remain separate gates.
+The source repair is recorded in
 [Plan 0011](dev/plans/0011-2026-11-09-chromium-157-patch-repair.md).
 Do not add a duplicate ordering-DCHECK backport.
 

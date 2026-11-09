@@ -6,8 +6,8 @@ State: CLOSED
 
 The reviewed source repair is complete: both patches replay on Chromium
 157.0.8103.38 and retain the downstream invariant and regression. Compiled
-browser qualification and approved-queue adoption remain outstanding before
-automation can resume. Original diagnosis is retained in note 0002.
+browser qualification subsequently passed under Plan0012; approved-queue
+integration and updater requeue remain outstanding before automation can resume. Original diagnosis is retained in note 0002.
 Both operator checkouts were clean at start (repo b543e2f; source 15a1e89a).
 
 ## Scope and acceptance
