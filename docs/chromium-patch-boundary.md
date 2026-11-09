@@ -1,6 +1,6 @@
 # Chromium Patch Boundary
 
-Date: 2026-10-22
+Date: 2026-11-09
 
 ## Decision
 
@@ -33,13 +33,21 @@ preserving the existing failed-break restoration path. It also added
 `external/wpt/css/css-text/crashtests/line-breaker-overflow-crash.html`.
 
 That ordering-DCHECK repair is distinct from the stale shape-result defect
-covered by downstream patch 0002. On current Stable `156.0.8078.47` at
-`1d17a2e2ee147bb7d6ae2ab6abdb3a2510c17775`, `BreakText()` still widens a reused
-result on overflow without clearing its earlier shape. Retain patch 0002,
-which clears that shape and adds `BreakWordWithReusedShapeResult`, subject to
-focused regression validation. The current queue therefore has two patches:
-the private webdriver behavior and this compatibility repair. Do not add a
-duplicate ordering-DCHECK backport.
+covered by downstream patch 0002. Chromium `157.0.8103.38` at pinned base
+`a733b5afbb3ba618844ff8876b89ad1a774b2f18` now clears stale shaping under
+`LineBreakerClearShapeResultOnOverflow`, a feature marked `stable`. Its new
+context broke replay of the old patch 0002.
+
+The repaired queue retains two patches: private webdriver behavior and the
+downstream unconditional stale-shape invariant with the existing seeded
+`BreakWordWithReusedShapeResult` regression and DCHECK consistency check.
+Patch 0002 replaces the upstream feature-guarded clear with unconditional
+clearing, preserving downstream behavior even with runtime feature overrides.
+Its testing hook and regression remain unchanged. This is a source-level
+repair proposal; Chromium compilation, focused DCHECK-enabled tests and CDP
+smoke must qualify the candidate before release or activation. See
+[Plan 0011](dev/plans/0011-2026-11-09-chromium-157-patch-repair.md).
+Do not add a duplicate ordering-DCHECK backport.
 
 Upstream review: <https://chromium-review.googlesource.com/c/chromium/src/+/7992797>
 
