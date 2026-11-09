@@ -9,7 +9,7 @@ Repo source e6f5ec241d2417b1554e427f01719185a641ac1b is clean on
 repair/chromium-157-patch-replay. Operator Chromium remains clean at
 15a1e89ace187947b2a39881b45f4de992157b56. The repaired source tree was reviewed
 at 2dd44af34c06840df3aaebc6cf32ebc691293f43, base
-a733b5afbb3ba618844ff8876b89ad1a774b2f18. Browser compilation remains unmet.
+a733b5afbb3ba618844ff8876b89ad1a774b2f18. Browser compilation is running in the bounded unit below.
 Initial headroom: 551 GiB disk free, approximately 25 GiB memory available;
 compilation requires at least 32 GiB memory and 200 GiB disk free.
 
@@ -57,3 +57,21 @@ source cleanliness after the long build. Primary closes this gap with mandatory
 post-run source status and identity/hash verification in a separate primary
 acceptance receipt; runner qualification.json is provisional. Running code is
 not silently changed by editing its source file.
+
+## Preparation checkpoint
+
+`outcome_progress`: full worktree/dependencies/hooks and both optimization
+profile checks passed. Both patches replayed and the complete source tree
+matches reviewed repair 2dd44af. New source HEAD
+`997304ee0ffc57e87df6945393084efcfa287f51`, tree
+`88a40531127b9e286ccb92669229aee2fe06d0b9`.
+GN generation passed and compilation of chrome+blink_unittests started with
+8 jobs. Start headroom 34457042944 memory bytes and 538307497984 disk bytes
+passed the 32-GiB/200-GiB gate. GN args SHA256
+`07cf9ef14782cfc17090b813f3a8d2a383a838a7cb2301ec945fb467f7e21bb6`;
+queue SHA256
+`587a95d8d49a76446e1686f54e427e37c1d6cbe73c5db33c0d054ab1deffa9ee`.
+Driver receipt is `qualification.json`; current build log ends in
+`016-autoninja.log` under evidence. Existing checkouts and activation remain
+untouched. Browser acceptance is still unmet until build, tests, smoke and
+primary final identity/cleanliness checks pass.
