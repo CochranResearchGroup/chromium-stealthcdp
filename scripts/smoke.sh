@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Keep the setsid launcher outside a shell-created background process group.
+set +m
 
 usage() {
   cat <<'EOF'
@@ -56,18 +58,35 @@ tmpdir="$(mktemp -d)"
 log="$tmpdir/chrome.log"
 chrome_pid=""
 cleanup() {
-  if [[ -n "$chrome_pid" ]] && kill -0 "$chrome_pid" 2>/dev/null; then
-    kill "$chrome_pid" 2>/dev/null || true
+  local status=$?
+  trap - EXIT
+  if [[ -n "$chrome_pid" ]]; then
+    # This group was created solely for this smoke's disposable browser.
+    # Waiting only for the parent leaves profile writers racing with rm.
+    kill -TERM -- "-$chrome_pid" 2>/dev/null || true
+    for _ in $(seq 1 20); do
+      if ! kill -0 -- "-$chrome_pid" 2>/dev/null; then
+        break
+      fi
+      sleep 0.05
+    done
+    kill -KILL -- "-$chrome_pid" 2>/dev/null || true
     wait "$chrome_pid" 2>/dev/null || true
   fi
-  rm -rf "$tmpdir"
+  for _ in $(seq 1 3); do
+    if rm -rf -- "$tmpdir"; then
+      exit "$status"
+    fi
+    sleep 0.05
+  done
+  exit 1
 }
 trap cleanup EXIT
 
 started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 version="$("$chrome_abs" --version | sed 's/[[:space:]]*$//')"
 
-"$chrome_abs" \
+setsid -- "$chrome_abs" \
   --headless=new \
   --disable-gpu \
   --no-sandbox \

@@ -152,3 +152,14 @@ keep source-backed continuity in docs while avoiding speculative memory writes.
 No authority exists to place this project outcome in another cloud. No write
 was attempted. Non-write receipt:
 `~/.graphiti-openclaw/state/closeout-memory/20261109T190602Z-remember.json`.
+
+## Subsequent staging verification
+
+Candidate was staged with the manifest's original repo 970d417 provenance.
+Staged CDP evaluation passed, but two helper defects surfaced during cleanup
+and freshness checking. Plan0013 records real red-to-green regressions and
+repairs: owned browser process-group cleanup and linked-worktree Git-root
+validation. These helper-only changes preserve all built-browser identities;
+compiled qualification and its original receipts remain immutable. Final
+staged smoke/freshness and helper provenance are bound by `staging.json` in the
+private execution root. The shared/installed aliases remain unchanged.
