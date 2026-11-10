@@ -9,22 +9,31 @@ Patch queue for Chromium customizations related to stealth CDP behavior.
 
 ## Working Branch
 
-Development happens in the Chromium checkout at `../src` on branch:
+The retained Chromium checkout at `../src` remains on branch:
 
 ```sh
 ec/chromium-stealthcdp-stable-156.0.8078.47
 ```
 
+The current queue is a Chromium `157.0.8103.38` repair proposal pinned by
+`upstream-revision.txt`. Its source branch is
+`repair/chromium-157-patch-replay` in the isolated worktree at
+`~/.local/state/chromium-stealthcdp/patch-repair-157/source`.
+A separate DCHECK-enabled candidate passed all 43 LineBreaker tests and CDP
+smoke; see [Plan 0012](docs/dev/plans/0012-2026-11-09-chromium-157-build-qualification.md).
+Approved-queue integration and updater requeue remain separate gates.
+
 ## Export
 
-From `../src`, export the current patch queue with:
+From the source checkout containing the queue on the pinned base, export to a
+separate review directory first:
 
 ```sh
-rm -f ../chromium-stealthcdp/patches/*.patch
-git format-patch --binary -o ../chromium-stealthcdp/patches "$(cat ../chromium-stealthcdp/upstream-revision.txt)..HEAD"
+git format-patch --binary -o /path/to/review-patches "$(cat /path/to/chromium-stealthcdp/upstream-revision.txt)..HEAD"
 ```
 
-Then commit the updated patch files in this repository.
+Review the generated queue and range-diff before replacing the patch files in
+this repository. The retained `../src` checkout is still on the older base.
 
 ## Apply
 
@@ -34,6 +43,17 @@ descendant:
 ```sh
 git am /path/to/chromium-stealthcdp/patches/*.patch
 ```
+
+For a fast replay regression check using an existing checkout's pinned Git
+objects without changing that checkout:
+
+```sh
+python3 scripts/check-patch-replay.py --src /path/to/chromium/src
+```
+
+Use `--revision FULL_SHA` to check a prospective upstream revision. This
+materializes only queue-touched files in a disposable repository and exercises
+`git am`; it does not compile or qualify a browser.
 
 ## Promote A Built Binary
 

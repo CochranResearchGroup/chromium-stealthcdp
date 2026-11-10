@@ -290,6 +290,26 @@ class Controller:
             run['notification'] = {'delivered': False, 'error': str(exc)}
         self.save(run)
 
+    def maintain(self):
+        """Cleanup failure must never undo a committed deployment verdict."""
+        from automation_retention import maintain
+        installed_root = Path(self.config.get('installed_root', str(Path.home() / '.local/share/chromium-stealthcdp')))
+        try:
+            result = maintain(self.root, installed_root) if installed_root.exists() else {'skipped': 'installed root absent'}
+        except Exception as exc:
+            result = {'status': 'failed', 'error': str(exc)}
+        atomic_json(self.root / 'retention.json', result)
+        return result
+
+    def cleanup(self):
+        """Local retention only; never fetch, publish, deploy, or notify."""
+        with (self.root / 'controller.lock').open('a+') as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return {'state': 'busy', 'removed': []}
+            return self.maintain()
+
     def run(self, requeue=False):
         with (self.root / 'controller.lock').open('a+') as lock:
             try:
@@ -302,10 +322,7 @@ class Controller:
             if (self.root / 'deployments/deployment-halted.json').exists():
                 return {'state': 'stopped', 'reason': 'deployment rollback requires investigation'}
             self.github.preflight()
-            from automation_retention import maintain
-            installed_root = Path(self.config.get('installed_root', str(Path.home() / '.local/share/chromium-stealthcdp')))
-            if installed_root.exists():
-                atomic_json(self.root / 'retention.json', maintain(self.root, installed_root))
+            self.maintain()
             # Read approved queue from remote main without mutating the installed code.
             queue_repo = self.root / 'approved-source'
             if not queue_repo.exists():
@@ -384,6 +401,13 @@ class Controller:
                         'version': run['target']['version'], 'patch_queue_sha256': run['context']['patch_queue_sha256'],
                         'publication': run['publication'], 'deployment': run['deployment'], 'run_id': run['id']})
                     self.save(run)
+                    # The committed deployment and baseline are durable before cleanup.
+                    try:
+                        run['retention'] = self.maintain()
+                        self.save(run)
+                    except Exception as exc:
+                        # Even receipt I/O failure cannot roll back a committed browser.
+                        run['retention'] = {'status': 'failed', 'error': str(exc)}
                 return run
             except AwaitingChecks as exc:
                 run['state'], run['waiting_reason'] = 'awaiting_checks', str(exc)
@@ -396,6 +420,13 @@ class Controller:
                     atomic_json(self.root / 'deployment-stopped.json', {'id': run['id'], 'error': str(exc)})
                     run['state'] = 'rolled_back' if getattr(exc, 'receipt', {}).get('status') == 'rolled_back' else 'failed'
                 self.save(run)
+                # Packaged publication/integration failures can release compile
+                # trees without retrying providers or losing retry assets.
+                try:
+                    run['retention'] = self.maintain()
+                    self.save(run)
+                except Exception:
+                    pass  # Preserve the original failure and its recovery state.
                 self.repair_report(run)
                 self.report(run)
                 setattr(exc, '_stealthcdp_notification', run['notification'])
@@ -451,6 +482,7 @@ def main():
     run = sub.add_parser('run')
     run.add_argument('--requeue', action='store_true')
     sub.add_parser('status')
+    sub.add_parser('cleanup')
     baseline = sub.add_parser('adopt')
     baseline.add_argument('--artifact', required=True, type=Path)
     quarantine = sub.add_parser('quarantine')
@@ -458,6 +490,14 @@ def main():
     quarantine.add_argument('--confirmed-defect', required=True)
     args = parser.parse_args()
     config = load(args.config)
+    if args.action == 'cleanup':
+        try:
+            result = Controller(config).cleanup()
+            print(json.dumps(result, indent=2))
+            return int(result.get('status') == 'failed')
+        except Exception as exc:
+            print(f'cleanup deferred: {exc}', file=sys.stderr)
+            return 1
     try:
         from automation_notify import announce, Announcer
         if args.action == 'run':

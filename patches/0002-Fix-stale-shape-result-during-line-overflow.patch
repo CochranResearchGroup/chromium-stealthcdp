@@ -1,19 +1,20 @@
-From 77c6cac7b28ec89ad368a62d5ac6f97894f6e8a6 Mon Sep 17 00:00:00 2001
-From: Eric W Cochran <ecochran76@ewc2.cbe.iastate.edu>
-Date: Thu, 13 Aug 2026 17:06:02 -0500
+From 2dd44af34c06840df3aaebc6cf32ebc691293f43 Mon Sep 17 00:00:00 2001
+From: Chromium StealthCDP Repair <automation@users.noreply.github.com>
+Date: Mon, 9 Nov 2026 05:16:55 -0600
 Subject: [PATCH 2/2] Fix stale shape result during line overflow
 
+Reconcile Chromium 157 upstream feature-guarded clearing with the downstream unconditional invariant. Retain the seeded reused-shape regression and consistency check. The old patch failed replay because upstream inserted the feature guard in its context.
 ---
- .../core/layout/inline/line_breaker.cc        | 10 ++++
+ .../core/layout/inline/line_breaker.cc        | 14 ++++--
  .../core/layout/inline/line_breaker.h         | 10 ++++
  .../core/layout/inline/line_breaker_test.cc   | 46 +++++++++++++++++++
- 3 files changed, 66 insertions(+)
+ 3 files changed, 65 insertions(+), 5 deletions(-)
 
 diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker.cc b/third_party/blink/renderer/core/layout/inline/line_breaker.cc
-index e126e872ddbdf..2c90a3c4d4880 100644
+index 3ded12e7d8c54..3761a2982ce30 100644
 --- a/third_party/blink/renderer/core/layout/inline/line_breaker.cc
 +++ b/third_party/blink/renderer/core/layout/inline/line_breaker.cc
-@@ -1700,9 +1700,19 @@ LineBreaker::BreakResult LineBreaker::BreakText(
+@@ -1704,14 +1704,18 @@ LineBreaker::BreakResult LineBreaker::BreakText(
      // rewinded. Making this item long enough to overflow is enough.
      if (!shape_result) {
        DCHECK(breaker.NoResultIfOverflow());
@@ -22,11 +23,15 @@ index e126e872ddbdf..2c90a3c4d4880 100644
 +      }
        item_result->inline_size = available_width_with_hyphens + 1;
        item_result->text_offset.end = item.EndOffset();
-+      // `item_result` can be reused while rewinding overflow. Its previous
-+      // shape only covers the old text range and is invalid after widening the
-+      // result to the end of the item.
-+      item_result->shape_result = nullptr;
        item_result->text_offset.AssertNotEmpty();
+-      if (RuntimeEnabledFeatures::
+-              LineBreakerClearShapeResultOnOverflowEnabled()) {
+-        // Discard shaping from a previous attempt with a different text range.
+-        item_result->shape_result = nullptr;
+-      }
++      // Discard shaping from a previous attempt with a different text range.
++      // Keep the downstream invariant independent of runtime feature overrides.
++      item_result->shape_result = nullptr;
 +#if DCHECK_IS_ON()
 +      item_result->CheckConsistency(true);
 +#endif
@@ -34,7 +39,7 @@ index e126e872ddbdf..2c90a3c4d4880 100644
      }
      DCHECK_EQ(shape_result->NumCharacters(),
 diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker.h b/third_party/blink/renderer/core/layout/inline/line_breaker.h
-index 507c26b5dae2f..6e8a391dfdcc0 100644
+index 3a715a17f106f..beb47359a389f 100644
 --- a/third_party/blink/renderer/core/layout/inline/line_breaker.h
 +++ b/third_party/blink/renderer/core/layout/inline/line_breaker.h
 @@ -117,6 +117,13 @@ class CORE_EXPORT LineBreaker {
@@ -51,7 +56,7 @@ index 507c26b5dae2f..6e8a391dfdcc0 100644
    // Find break candidates in the `item_result` and append to `context`. See
    // `LineBreakCandidate` and `LineBreakCandidateContext` for more details.
    void AppendCandidates(const InlineItemResult& item_result,
-@@ -404,6 +411,9 @@ class CORE_EXPORT LineBreaker {
+@@ -407,6 +414,9 @@ class CORE_EXPORT LineBreaker {
  
    bool disable_trailing_whitespace_collapsing_ = false;
  

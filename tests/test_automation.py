@@ -98,6 +98,36 @@ class ControllerTests(unittest.TestCase):
         deploy.assert_called_once()
         self.assertEqual(first['context']['patchset_repo'],context['patchset'])
 
+    def test_cleanup_runs_after_durable_deployment_and_does_not_fail_it(self):
+        from unittest.mock import Mock
+        gh = self.github()
+        gh.integrate.return_value = {'source_commit': 'b'*40}
+        gh.publish.return_value = {'tag': 'fixture'}
+        context = {'artifact': str(self.root/'artifact'), 'patchset': str(self.root/'exported'),
+                   'patch_queue_sha256': m.patch_digest(self.root/'source')}
+        factory = Mock()
+        factory.return_value.run.return_value = context
+        deploy = Mock(return_value={'status': 'committed'})
+        controller = m.Controller(self.config, github=gh, discover_fn=lambda: dict(self.target),
+                                  pipeline_factory=factory, deploy_fn=deploy)
+        calls = []
+        def cleanup():
+            baseline = m.load(controller.root/'baseline.json', {})
+            calls.append(baseline.get('run_id'))
+            if len(calls) == 2:
+                self.assertEqual(m.load(controller.root/'runs'/baseline['run_id']/'run.json')['state'], 'complete')
+                raise OSError('cleanup receipt storage failure')
+            return {}
+        with patch.object(m, 'command', side_effect=self.fake_command), \
+             patch.object(m, 'headroom', return_value={'ready': True}), \
+             patch.object(controller, 'maintain', side_effect=cleanup):
+            result = controller.run()
+        self.assertEqual(result['state'], 'complete')
+        self.assertEqual(len(calls), 2)
+        self.assertFalse((controller.root/'deployment-stopped.json').exists())
+        gh.notify.assert_not_called()
+        deploy.assert_called_once()
+
     def test_preflight_failure_records_undelivered_after_prior_run(self):
         from unittest.mock import Mock
         config_path=self.root/'config.json'
@@ -139,6 +169,41 @@ class ControllerTests(unittest.TestCase):
         m.atomic_json(path,{'state':'active','version':'156.0.8078.47'})
         self.assertEqual(m.load(path)['version'],'156.0.8078.47')
         self.assertEqual(path.stat().st_mode & 0o777,0o600)
+
+    def test_cleanup_has_no_provider_or_notification_effects(self):
+        import automation_notify
+        config_path = self.root/'config.json'
+        m.atomic_json(config_path, self.config)
+        with patch.object(m.Controller, 'maintain', return_value={'removed': []}) as maintain, \
+             patch.object(m, 'command') as command, patch.object(m.GitHub, 'preflight') as preflight, \
+             patch.object(automation_notify, 'announce') as announce, \
+             patch.object(sys, 'argv', ['automation', '--config', str(config_path), 'cleanup']):
+            self.assertEqual(m.main(), 0)
+        maintain.assert_called_once()
+        command.assert_not_called()
+        preflight.assert_not_called()
+        announce.assert_not_called()
+
+    def test_cleanup_failure_does_not_notify_or_requeue(self):
+        import automation_notify
+        config_path = self.root/'config.json'
+        m.atomic_json(config_path, self.config)
+        with patch.object(m.Controller, 'cleanup', side_effect=RuntimeError('probe unavailable')), \
+             patch.object(m.GitHub, 'notify') as notify, \
+             patch.object(automation_notify, 'announce') as announce, \
+             patch.object(sys, 'argv', ['automation', '--config', str(config_path), 'cleanup']):
+            self.assertEqual(m.main(), 1)
+        notify.assert_not_called()
+        announce.assert_not_called()
+
+    def test_cleanup_defers_while_upgrade_lock_is_held(self):
+        import fcntl
+        controller = m.Controller(self.config)
+        with (controller.root/'controller.lock').open('a+') as lock, \
+             patch.object(controller, 'maintain') as maintain:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.assertEqual(controller.cleanup()['state'], 'busy')
+        maintain.assert_not_called()
 
     def test_stable_discovery_rejects_unpinned_identity(self):
         with self.assertRaises(ValueError):

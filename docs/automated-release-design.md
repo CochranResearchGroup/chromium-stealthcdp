@@ -69,8 +69,39 @@ runtime output.
 | Run duration | Twelve hours |
 | Free-disk reserve | 200 GiB |
 | I/O | Low priority |
-| Local good releases | Active, previous and one additional release |
+| Local good installed releases | Active, previous and one additional release |
+| Completed build intermediates | Retire after committed installed acceptance; installed rollback copies remain |
+| Superseded terminal output | Retire after a newer committed deployment; retain newest failure and unfinished runs |
+| Packaged integrate/publish failure | Retire compiler output after package and staged executable hashes verify; preserve retry assets and evidence |
 | Logs | Ninety days, plus retained latest-failure evidence |
+
+Retention runs at cycle startup and immediately after a committed deployment,
+after its baseline and run receipt are durable. Candidate artifacts, packages,
+and automation-owned `out/Automation-<run>` trees are intermediates, distinct
+from installed rollback releases. A terminal run is superseded only by a newer
+committed, accepted deployment. Cleanup errors are recorded in `retention.json`
+and do not change a successful deployment into a failure. Unreadable same-user
+process identities defer removal; live executable, cwd, open-file and mapping
+references, selected staging paths, symlink traversal and mounts protect output.
+Operator-managed `../src/out` and `../artifacts` are never covered by this policy.
+
+The provider-free `automation.py --config <config> cleanup` action takes the
+same controller lock and retries retention without fetching, publishing,
+deployment, requeue, or notifications. Packaged integration/publication failures
+also attempt retention immediately; compilation and deployment failures retain
+their recovery output. A retry at integration/publication does not require the
+compiler output, but still requires the staged artifact and verified packages.
+
+On hosts with non-dumpable same-user processes, an optional read-only privileged
+probe can supply the missing process visibility. Provision explicitly as root
+using `scripts/install-process-probe.py --user <operator>`. This installs an
+isolated stdlib probe under `/usr/local/libexec`, a fixed UID/root configuration
+under `/etc/chromium-stealthcdp`, and a sudoers rule permitting only that probe
+with no arguments. It reads executable, cwd, open-file and mapping references;
+returns only paths within the two managed Chromium roots; and checks PID start
+identity. The controller accepts only fresh same-boot results for its UID/root.
+Missing privileges, malformed/stale results or unreadable processes still defer
+cleanup. Kernel ptrace/dumpability and browser/service settings are unchanged.
 
 Defer a build when headroom is insufficient. Resource exhaustion fails the
 candidate without changing the installed browser. Retention deletes only

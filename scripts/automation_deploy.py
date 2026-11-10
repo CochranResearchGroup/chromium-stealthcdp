@@ -354,6 +354,11 @@ def inspect_live_versions(root: Path, *, proc_root=Path('/proc')):
             processes.append({'pid': int(process.name), 'executable': target,
                               'version': executable.relative_to(root).parts[0],
                               'olderThanActive': executable.relative_to(root).parts[0] != active})
+    if unknown and proc_root == Path('/proc'):
+        from automation_processes import privileged_references
+        verified = privileged_references(root)
+        if verified is not None:
+            return verified
     return {'processes': processes, 'unknownPids': unknown}
 
 
@@ -363,8 +368,9 @@ def retain_versions(root: Path, keep=3, *, dry_run=False, proc_root=Path('/proc'
     if live['unknownPids']:
         return {'removed': [], 'deferred': 'same-user process identity unavailable', **live}
     protected = {row['version'] for row in live['processes']}
-    if (root / 'current').exists():
-        protected.add((root / 'current').resolve().name)
+    for selector in ('current', 'previous'):
+        if (root / selector).exists():
+            protected.add((root / selector).resolve().name)
     versions = []
     for path in root.iterdir():
         if path.is_symlink() or not path.is_dir():

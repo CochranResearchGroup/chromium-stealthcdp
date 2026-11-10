@@ -51,7 +51,8 @@ if [[ -n "$installed" ]]; then
   artifact="$installed"
 fi
 
-if [[ ! -d "$src/.git" ]]; then
+if ! src_root="$(git -C "$src" rev-parse --show-toplevel 2>/dev/null)" || \
+    [[ "$(realpath "$src")" != "$src_root" ]]; then
   echo "missing Chromium source checkout: $src" >&2
   exit 2
 fi
