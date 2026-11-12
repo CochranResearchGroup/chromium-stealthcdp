@@ -15,6 +15,11 @@
 
 ## Repo-Specific Guidance
 
+- Operator requires Chromium StealthCDP exclusively. Do not build, install, or
+  substitute Chrome for Testing. Missing StealthCDP is an explicit failure,
+  not permission to select another browser. Both `is_chrome_for_testing` and
+  `is_chrome_for_testing_branded` must resolve to false before compilation.
+
 - Start branch-sensitive work by recording `git status --short --branch` and
   `git rev-parse HEAD` in both this repo and `../src`. Stop rather than
   overwriting unexpected changes.
