@@ -1,0 +1,8 @@
+{
+  "version": "157.0.8103.78",
+  "upstream_revision": "4b3d0dabb8250b6f152d2d85d79e7706e309d087",
+  "patch_queue_sha256": "9a82c9825276e01fba97069c3bfcb9c50786ba1e65eb5759c3eb88abb6714e58",
+  "executable_sha256": "f70c8b6442d6315689b898c3f5e25e29d5f52b89e68167d8e7f0a7439544b828",
+  "qualification": "passed",
+  "retained_regression": "LineBreakerTest.*"
+}
