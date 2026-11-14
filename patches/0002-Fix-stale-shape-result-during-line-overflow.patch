@@ -1,4 +1,4 @@
-From e71aaa2a1effe15abe00fc43fc712acc961a28d4 Mon Sep 17 00:00:00 2001
+From 39f8185e4708dc58d5d008b926eb1d815a753252 Mon Sep 17 00:00:00 2001
 From: Chromium StealthCDP Repair <automation@users.noreply.github.com>
 Date: Mon, 9 Nov 2026 05:16:55 -0600
 Subject: [PATCH 2/2] Fix stale shape result during line overflow
