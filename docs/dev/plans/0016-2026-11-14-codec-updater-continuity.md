@@ -1,18 +1,20 @@
 # Codec updater continuity and maintained delivery
 
-State: OPEN
+State: CLOSED
 Owner: primary Codex agent
 Authority: operator explicitly requests codec updater changes and PR/review/merge/deployment.
 Base: upstream/main144974f; prior local integration814c364 preserved and merged.
 
 ## Current State
 
-Installed codec browser39b260e9 is accepted. Controller remains pinned to old
-1a7c2d4 code with no codec defaults; run/baseline/release identities omit GN.
-Local research, actual decoder harness, CFT build guard and qualification records
-need PR integration alongside the narrowly scoped updater repair. Current main's
-157 patch queue/pin must survive. Distribution metadata scan failed previously;
-private installation acceptance does not qualify automatic public publication.
+PR14 is merged asd546875f834c35aee4e1d6972d1eb7632bd40e7a. The clean merged
+controller generation is installed; its config source_repo and current selector
+match that merge. Codec defaults/recipe, dependency PATH and enabled timer are
+verified. Installed39b260e9 browser and managed host892794 remain unchanged.
+The pending local branch backlog is integrated into main through the reviewed
+PR, including source/test helpers and qualified candidate/cutover history.
+Actual public codec distribution remains gated by unresolved metadata errors.
+
 
 ## Acceptance and scope
 
@@ -98,3 +100,37 @@ Precompile metadata failure is now checked immediately after resolved GN values,
 so known unpublishable inputs stop before a full compile. Final qualification
 repeats the scan after exact-byte tests. Source PR and immutable controller
 installation remain the only outstanding steps for this packet.
+
+
+## Controller adoption | 2026-11-14
+
+PR: https://github.com/CochranResearchGroup/chromium-stealthcdp/pull/14
+Reviewed head84350776f9f9e8023e13febd7414f58a69b1dbfd; merge
+d546875f834c35aee4e1d6972d1eb7632bd40e7a. Local qualification status posted;
+no paid/hosted CI run.118 tests passed across102 normal and16 separately completed
+retention cases; real GN, actual Debian fixture and disposable managedMCP proof
+passed. Independent Standards/Spec review, accepted F1 remediation and precompile
+metadata guard verification are recorded; authors and final reviewer separated.
+No force push or rewrite of old branch/release history.
+
+Installed via scripts/install-automation.py under controller.lock from the clean
+merge. Current immutable generation and config source_repo both resolve to that
+SHA. GN arguments SHA c48179af48c83713ef789b90b60a61454588a91925e3a92ca4cbf53903020cc4;
+recipe343b4878b7d81bda2f2026ce708bfd8489668632c7e073dedec6fc091646f512.
+Installed controller --help loads successfully. Daily timer active and enabled;
+service retains32GiB/no-swap/eightCPU/12h caps and includes the required local
+fixture encoder PATH. No update run, browser compile, codec package publication
+or Slack notification was triggered by controller installation.
+
+Before/after readbacks retain installed browser SHA39b260e9a9bf5129571aa41d916504442213ce09db2f4f8faa3067f81d516265
+and runtime hostPID892794 unchanged. Existing profiles, browser roots, old
+artifacts/controller generations and failed receipts are preserved. Private
+codec-updater-20261114/ evidence binds source, commands, results, GN, actualMCP,
+packaging, timeouts and controller adoption. This is native Linux/WSL validation,
+not a hosted or full cross-platform/browser-rebuild claim.
+
+The following documentation-only closeout may advance main. Its controller code
+closure must equal d546875 before a final generation readback; no repeat browser
+build/tests are required for unchanged executable/controller inputs.
+Memory disposition: unavailable for project-cloud write because no reviewed
+Chromium group is configured. This source-backed packet retains durable outcome.
