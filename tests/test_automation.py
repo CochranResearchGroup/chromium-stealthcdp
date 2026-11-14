@@ -8,6 +8,7 @@ from unittest.mock import patch
 SCRIPTS = Path(__file__).resolve().parents[1] / 'scripts'
 sys.path.insert(0, str(SCRIPTS))
 import automation as m
+from automation_pipeline import build_recipe_sha256
 
 class ControllerTests(unittest.TestCase):
     def setUp(self):
@@ -35,9 +36,20 @@ class ControllerTests(unittest.TestCase):
     def controller(self):
         return m.Controller(self.config, github=self.github(), discover_fn=lambda: dict(self.target))
 
+    def test_legacy_baseline_cannot_hide_codec_recipe_change(self):
+        controller = self.controller()
+        m.atomic_json(controller.root/'baseline.json', {'version':self.target['version'],
+            'patch_queue_sha256':m.patch_digest(self.root/'source')})
+        with patch.object(m,'command',side_effect=self.fake_command), \
+             patch.object(m,'headroom',return_value={'ready':False}):
+            result=controller.run()
+        self.assertEqual(result['state'],'deferred')
+        self.assertIn('build_recipe_sha256',result['target'])
+        controller.github.publish.assert_not_called()
+
     def test_unchanged_never_builds_or_publishes(self):
         controller = self.controller()
-        m.atomic_json(controller.root / 'baseline.json', {'version': self.target['version'], 'patch_queue_sha256': m.patch_digest(self.root/'source')})
+        m.atomic_json(controller.root / 'baseline.json', {'version': self.target['version'], 'patch_queue_sha256': m.patch_digest(self.root/'source'), 'build_recipe_sha256':build_recipe_sha256()})
         with patch.object(m, 'command', side_effect=self.fake_command):
             result = controller.run()
         self.assertEqual(result['state'], 'unchanged')
@@ -63,9 +75,9 @@ class ControllerTests(unittest.TestCase):
 
     def test_ambiguous_publication_resumes_readback_not_build(self):
         controller=self.controller()
-        target=dict(self.target, approved_patch_queue_sha256=m.patch_digest(self.root/'source'))
+        target=dict(self.target, approved_patch_queue_sha256=m.patch_digest(self.root/'source'), build_recipe_sha256=build_recipe_sha256())
         identity=m.target_id(target)
-        run={'id':identity,'target':target,'state':'active','stage':'publish','context':{},'integration':{'source_commit':'b'*40}}
+        run={'id':identity,'target':target,'state':'active','stage':'publish','context':{'build_recipe_sha256':build_recipe_sha256(),'distribution_qualification':{'success':True,'build_recipe_sha256':build_recipe_sha256()}},'integration':{'source_commit':'b'*40}}
         controller.save(run)
         controller.github.publish.side_effect=RuntimeError('remote outcome uncertain')
         with patch.object(m,'command',side_effect=self.fake_command):
@@ -79,7 +91,7 @@ class ControllerTests(unittest.TestCase):
     def test_full_success_then_noop_does_not_repeat_effects(self):
         from unittest.mock import Mock
         context={'artifact':str(self.root/'artifact'),'patchset':str(self.root/'exported'),
-                 'patch_queue_sha256':m.patch_digest(self.root/'source')}
+                 'patch_queue_sha256':m.patch_digest(self.root/'source'),'build_recipe_sha256':build_recipe_sha256(),'distribution_qualification':{'success':True,'build_recipe_sha256':build_recipe_sha256()}}
         factory=Mock()
         factory.return_value.run.return_value=context
         deploy=Mock(return_value={'status':'committed'})
@@ -104,7 +116,7 @@ class ControllerTests(unittest.TestCase):
         gh.integrate.return_value = {'source_commit': 'b'*40}
         gh.publish.return_value = {'tag': 'fixture'}
         context = {'artifact': str(self.root/'artifact'), 'patchset': str(self.root/'exported'),
-                   'patch_queue_sha256': m.patch_digest(self.root/'source')}
+                   'patch_queue_sha256': m.patch_digest(self.root/'source'),'build_recipe_sha256':build_recipe_sha256(),'distribution_qualification':{'success':True,'build_recipe_sha256':build_recipe_sha256()}}
         factory = Mock()
         factory.return_value.run.return_value = context
         deploy = Mock(return_value={'status': 'committed'})
@@ -162,7 +174,7 @@ class ControllerTests(unittest.TestCase):
     def test_publication_requires_approved_remote_before_any_effect(self):
         with patch.object(m,'command',return_value='/local/clone'):
             with self.assertRaisesRegex(RuntimeError,'remote is outside'):
-                m.GitHub().publish({'patchset_repo':str(self.root),'version':'156.0.8078.47','patch_queue_sha256':'c'*64},{'source_commit':'b'*40})
+                m.GitHub().publish({'patchset_repo':str(self.root),'version':'156.0.8078.47','patch_queue_sha256':'c'*64,'build_recipe_sha256':build_recipe_sha256(),'distribution_qualification':{'success':True,'build_recipe_sha256':build_recipe_sha256()}},{'source_commit':'b'*40})
 
     def test_atomic_state_keeps_exact_values(self):
         path=self.root/'receipt.json'

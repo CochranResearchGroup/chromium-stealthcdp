@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / 'scripts'
 sys.path.insert(0, str(SCRIPTS))
-from automation_pipeline import CandidatePipeline, PipelineConfig, PipelineError, patch_queue_sha256, sha256
+from automation_pipeline import CandidatePipeline, PipelineConfig, PipelineError, patch_queue_sha256, sha256, build_recipe_sha256, artifact_name
 
 
 class PipelineSafetyTests(unittest.TestCase):
@@ -95,30 +95,37 @@ class PipelineSafetyTests(unittest.TestCase):
         (out/'args.gn').write_text(GN_ARGS)
         evidence=self.base/'run/evidence'
         evidence.mkdir(parents=True)
-        artifact=self.base/'run/artifacts/156.0.8078.47+stealthcdp.queue'
+        artifact=self.base/'run/artifacts'/artifact_name('156.0.8078.47','queue',build_recipe_sha256())
         (artifact/'chrome-linux').mkdir(parents=True)
         (artifact/'chrome-linux/chrome').write_bytes(b'accepted executable')
         (out/'chrome').write_bytes(b'accepted executable')
-        manifest={'chromium':{'upstreamRevision':'base','sourceSha':'source','dirty':False},
+        manifest={'buildRecipeSha256':build_recipe_sha256(),'chromium':{'upstreamRevision':'base','sourceSha':'source','dirty':False},
                   'patchset':{'patchQueueSha256':'queue','dirty':False},
                   'executable':{'relativePath':'chrome-linux/chrome','sha256':sha256(artifact/'chrome-linux/chrome')}}
         (artifact/'manifest.json').write_text(json.dumps(manifest))
         (artifact.parent/'current').symlink_to(artifact.name)
-        context={'stage':'built','src':str(src),'out':'out/test','version':'156.0.8078.47',
+        context={'build_recipe_sha256':build_recipe_sha256(),'stage':'built','src':str(src),'out':'out/test','version':'156.0.8078.47',
                  'evidence':str(evidence),'run_root':str(self.base/'run'),'patchset':str(self.repo),
                  'upstream_revision':'base','source_sha':'source','patch_queue_sha256':'queue',
                  'required_regressions':['LineBreakerTest.BreakWordWithReusedShapeResult'],
                  'browser_pgo':{},'gn_args_sha256':'args','v8_revision':'v8'}
+        (src/'LICENSE').write_text('license')
+        (src/'third_party/ffmpeg').mkdir(parents=True)
+        for name in ('README.chromium','CREDITS.chromium'):
+            (src/'third_party/ffmpeg'/name).write_text('notice')
         def command(ctx,args,**kwargs):
             if str(args[0]).endswith('promote-artifact.sh'):
                 raise PipelineError('artifact already exists')
             if '--version' in args:return 'Chromium 156.0.8078.47'
             if str(args[0]).endswith('blink_unittests'):
                 (evidence/'line-breaker.xml').write_text('<testsuites><testcase classname="LineBreakerTest" name="BreakWordWithReusedShapeResult"/></testsuites>')
+            if str(args[0]).endswith('media_unittests'):
+                (evidence/'media.xml').write_text('<testsuites><testcase classname="FFmpegVideoDecoderTest" name="Decode"/></testsuites>')
             if str(args[0]).endswith('smoke.sh'):
                 Path(args[-1]).write_text(json.dumps({'success':True,'checks':{'navigatorWebdriver':'false'}}))
             return ''
         with patch.object(self.pipeline,'check_source'),patch.object(self.pipeline,'command',side_effect=command), \
+             patch.object(self.pipeline,'codec_acceptance', side_effect=lambda ctx,exe,root: (root.mkdir(parents=True,exist_ok=True),(root/'result.json').write_text('{}'))), \
              patch('automation_deploy.qualify_agent_browser',return_value={'success':True}):
             result=self.pipeline.qualify(context)
         self.assertEqual(result['stage'],'qualified')
@@ -131,7 +138,7 @@ class PipelineSafetyTests(unittest.TestCase):
     def test_resumed_package_must_match_recorded_digest(self):
         asset = self.base / 'browser.tar.zst'
         asset.write_bytes(b'qualified package')
-        context = {'stage': 'packaged', 'package_sha256': {str(asset): sha256(asset)}}
+        context = {'build_recipe_sha256':build_recipe_sha256(),'distribution_qualification':{'success':True,'build_recipe_sha256':build_recipe_sha256()},'stage': 'packaged', 'package_sha256': {str(asset): sha256(asset)}}
         self.assertIs(self.pipeline.package(context), context)
         asset.write_bytes(b'tampered package')
         with self.assertRaisesRegex(PipelineError, 'package changed'):

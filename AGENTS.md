@@ -13,6 +13,25 @@
 - `upstream-revision.txt` is the immutable Chromium base for the exported queue.
   The ordered files under `patches/` are the reviewable downstream delta.
 
+## Maintained delivery
+
+- Source, patch-queue and controller changes use a short-lived branch, reviewed
+  PR into `main`, passing local checks and a verified merge before deployment.
+  Preserve the remote-approved Chromium pin/queue when reconciling local work.
+- GitHub-hosted Actions are not funded. Run applicable checks locally, document
+  commands/results/source and use that evidence for review/merge/release. Do not
+  buy CI capacity or enable paid runs; billing-blocked hosted checks are not a
+  reason to repeat approval. Actual local failures must be resolved.
+- Controller deployments install a clean merged immutable generation and verify
+  its SHA and configuration. Fetching the latest patch queue does not update an
+  already installed controller generation.
+- Routine Linux builds retain H264/AAC (`proprietary_codecs=true`,
+  `ffmpeg_branding="Chrome"`) with Chromium branding and both testing flags false.
+  The FFmpeg configuration label does not select Google Chrome/CFT branding.
+  Configuration/acceptance recipe identity participates in runs and releases.
+- Actual decoder/CDP/regression acceptance and distribution metadata qualification
+  are separate. A failed distribution scan cannot authorize public codec release.
+
 ## Repo-Specific Guidance
 
 - Operator requires Chromium StealthCDP exclusively. Do not build, install, or
