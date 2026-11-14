@@ -3,7 +3,9 @@
 Date: 2026-11-13
 Status: configuration and dedicated candidate qualification accepted; installed
 adoption accepted after explicit2026-11-14 cutover; distribution qualification
-and automatic-updater codec continuity remain pending.
+remain pending. Codec-preserving updater defaults are deployed through
+[plan0016](../plans/0016-2026-11-14-codec-updater-continuity.md); the first new
+public codec release still requires the strict distribution gate.
 
 Follow-up: [plan0015](../plans/0015-2026-11-13-codec-enabled-candidate.md) records
 the built/staged Chromium157 candidate, actual H264/AAC/WebM decoder passes,
