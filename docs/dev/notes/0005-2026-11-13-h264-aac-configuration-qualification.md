@@ -2,7 +2,8 @@
 
 Date: 2026-11-13
 Status: configuration and dedicated candidate qualification accepted; installed
-adoption and distribution qualification remain pending.
+adoption accepted after explicit2026-11-14 cutover; distribution qualification
+and automatic-updater codec continuity remain pending.
 
 Follow-up: [plan0015](../plans/0015-2026-11-13-codec-enabled-candidate.md) records
 the built/staged Chromium157 candidate, actual H264/AAC/WebM decoder passes,
@@ -81,7 +82,8 @@ untouched; there was no automatic retry or requeue.
 
 At this original configuration checkpoint, the full build and adoption were
 unexecuted. Candidate build/playback is now qualified in plan0015; installed
-adoption is still pending. Do not flip
+adoption was subsequently accepted after explicit operator cutover in plan0015.
+Do not flip
 release-controller defaults or claim MP4 support from GN generation alone.
 The immediate Agent Browser popup repair is tracked separately in
 [issue693](https://github.com/CochranResearchGroup/agent-browser/issues/693).

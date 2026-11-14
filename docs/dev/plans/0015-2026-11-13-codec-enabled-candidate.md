@@ -7,11 +7,12 @@ Authority: operator approved build, actual MP4 acceptance, review and promotion.
 
 ## Current State
 
-The codec-enabled Chromium157 candidate is built, independently reviewed,
-qualified and promoted into its dedicated candidate root. Actual H264 frames,
-AAC PCM and WebM, active-CDP smoke and80 focused regressions pass; staged bytes
-were retested successfully. Installed156.73 and updater defaults remain unchanged.
-Distribution qualification remains open after upstream metadata scan failures.
+The codec-enabled Chromium157 candidate is built, reviewed, qualified, staged
+and now installed following the operator's explicit2026-11-14 cutover decision.
+Actual installed H264/AAC/WebM decode and active-CDP smoke pass; refreshed managed
+MCP selects the exact codec binary. Existing browser processes were preserved.
+Distribution qualification remains open; automatic updater codec defaults were
+not changed by this local cutover.
 
 
 ## Scope and acceptance
@@ -188,3 +189,52 @@ packet closes qualified dedicated-root staging, not installed codec adoption.
 Memory disposition: unavailable for a project-cloud write because no reviewed
 Chromium Graphiti group is configured; durable outcome/provenance retained here
 and in the staged evidence. No speculative destination or duplicate memory write.
+
+
+## Operator-authorized local cutover | 2026-11-14
+
+Operator explicitly requested replacement of the installed noncodec updater157
+build with this validated codec candidate. Local installation completed under
+the controller lock through scripts/install-linux-user.sh. Previous immutable
+installation157.0.8103.78+stealthcdp.9a82c9825276 remains for rollback. Current
+selection is157.0.8103.78+stealthcdp.243270639b11; binary SHA256 remains
+39b260e9a9bf5129571aa41d916504442213ce09db2f4f8faa3067f81d516265.
+Both source commits e71aaa2a and the superseded updater39f8185e have identical
+Git tree42ec5f6e9e57d72f67b9c338440c835539c576bc; this changes build configuration,
+not the source contents. Neither Chrome-for-Testing flag is enabled.
+
+Post-install decoder acceptance: H264/WebM10frames each, independent AAC44099
+PCM samples and nonzero RMS, webdriver=false; installed active-CDP smoke passes.
+Read-only independent installed identity review: PASS, zero blockers.
+
+The initial managed task and fresh-connection checks still launched superseded
+bytes. Both disposable tasks were scoped-closed and failed receipts retained.
+Supported automation_deploy.bind_config refreshed both existing manifest and
+executable-registry rows, preserving unrelated configuration with private backup.
+A further task still observed old bytes, proving config-file selection alone
+was insufficient while the existing runtime host remained running. No old proof
+was promoted into successful acceptance.
+
+Service status resolved the codec manifest correctly. Supervisor dry-run showed
+no blockers, current boot epoch, already-supervised selected host; service jobs
+reported no active work. The existing unit explicitly uses KillMode=process
+and retained-browser lifetime settings. A scoped runtime-host restart refreshed
+launch selection. Immediate OS checks preserved all12 pre-recorded browser root
+PIDs, executable paths and start tokens. No browser shutdown, profile clearing,
+profile copying or retained-profile migration was performed.
+
+Fresh managed MCP then launched the installed codec executable with exact
+SHA25639b260e9...; its addressed disposable task closed and profile writers were
+verified absent. Fresh final OS readback finds zero owned test-profile writers.
+Final install doctor exits0 with success=true; only the pre-existing missing
+authenticated dashboard journey receipt advisory remains. Retained sessions
+continue on their existing executable until their normal lifecycle ends.
+
+Private cutover/ evidence retains installer, before-selection/config backup,
+all failed/successful managed checks, recovery dry-run, before/after browser
+identities, decoder/smoke, final OS and doctor receipts. The installed selection
+and registry are accepted. Automatic updater GN defaults/publication policy are
+unchanged, so future updater builds are not yet qualified for codec continuity.
+Distribution metadata scan remains failed/open; no public codec release.
+Memory disposition for this cutover: unavailable (no reviewed Chromium project
+Graphiti group); this committed packet is durable source continuity.
