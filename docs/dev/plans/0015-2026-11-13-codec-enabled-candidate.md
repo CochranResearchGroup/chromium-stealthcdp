@@ -7,7 +7,9 @@ Authority: operator approved build, actual MP4 acceptance, review and promotion.
 
 ## Current State
 
-Configuration-only qualification is complete in note0005. Full compilation,
+Attempt1 reached61,651/62,075 steps then hit the supervisor runtime limit.
+One bounded incremental retry is active with unchanged source/GN/output.
+Configuration qualification is complete in note0005. Full compilation,
 actual H264 and independent AAC decoding, exact-byte smoke/regressions and
 candidate staging remain. Installed browser and automatic updater are unchanged.
 
@@ -101,3 +103,30 @@ Result: expected exit1; independent AAC failure and passing WebM retained.
 Memory disposition for this interim checkpoint: not_durable; running build state
 is transient and no terminal candidate outcome is qualified. Rich restart
 continuity is this committed plan and private attributable receipts.
+
+
+## Checkpoint 2 | runtime stop, bounded incremental retry
+
+Attempt1 stopped by systemd runtime limit at61,651/62,075 edges. Terminal state
+failed, result=timeout, signal15; no compiler failure in terminal log. Wall
+receipt39284.297 seconds differs from nominal12h service timer; retain both,
+no exact clock-cause assertion. Source, clean status and original GN digest
+remain verified. No browser/test executable exists yet, so no decode claim.
+The original output and every receipt remain. Attempt2 is the one allowed
+incremental retry, same output/source/PGO/queue/GN and resource caps, limited to
+2hours rather than another12hours. This does not reset attempt count or erase
+elapsed spend. No third build attempt is authorized by this packet.
+Retry unit chromium-stealthcdp-codec-20261113-retry1.service; terminal evidence
+codec-20261113/retry1/build-result.json. Inspect that original unit before any
+follow-up; no automatic retry. Promotion remains gated by actual acceptance.
+
+
+Retry invocation:04b66526a8d44303b80ac6b7035f4a48. Dry-run confirms424 remaining
+steps, including media_unittests/chrome/blink_unittests links. Continuation wake
+wake_intent_bf9dcc0b417e4bbc9fe31f618228737e is armed with ready monitor on the
+retry1 terminal file, lifetime8h; original completion wake was delivered and
+reconciled in this turn. The new wake is a distinct final-attempt event, not a
+replay of the original. No browser executable exists at retry admission.
+Interim memory disposition:not_durable; still-running compilation is transient,
+with no terminal qualified release outcome. Source-backed continuity retained
+here and in attributable private receipts.
