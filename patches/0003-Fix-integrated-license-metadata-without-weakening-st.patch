@@ -1,0 +1,388 @@
+From d689a50fd1502a7d9f6ccd432bd524e516a4c2e1 Mon Sep 17 00:00:00 2001
+From: Eric W Cochran <ecochran76@ewc2.cbe.iastate.edu>
+Date: Sat, 14 Nov 2026 11:56:30 -0600
+Subject: [PATCH 3/3] Fix integrated license metadata without weakening strict
+ validation
+
+---
+ .../crashpad/third_party/lss/README.crashpad  |  2 +-
+ .../crashpad/third_party/zlib/README.crashpad |  2 +-
+ tools/licenses/integration_metadata/README.md | 20 ++++
+ .../catapult.README.chromium                  | 11 +++
+ .../chromium_rust.README.chromium             | 11 +++
+ .../crubit.README.chromium                    | 11 +++
+ .../integration_metadata/marl.README.chromium | 11 +++
+ .../perfetto_android.README.chromium          | 11 +++
+ .../perfetto_chromium.README.chromium         | 11 +++
+ tools/licenses/integration_metadata_test.py   | 93 +++++++++++++++++++
+ tools/licenses/licenses.py                    | 81 ++++++++++------
+ 11 files changed, 236 insertions(+), 28 deletions(-)
+ create mode 100644 tools/licenses/integration_metadata/README.md
+ create mode 100644 tools/licenses/integration_metadata/catapult.README.chromium
+ create mode 100644 tools/licenses/integration_metadata/chromium_rust.README.chromium
+ create mode 100644 tools/licenses/integration_metadata/crubit.README.chromium
+ create mode 100644 tools/licenses/integration_metadata/marl.README.chromium
+ create mode 100644 tools/licenses/integration_metadata/perfetto_android.README.chromium
+ create mode 100644 tools/licenses/integration_metadata/perfetto_chromium.README.chromium
+ create mode 100644 tools/licenses/integration_metadata_test.py
+
+diff --git a/third_party/crashpad/crashpad/third_party/lss/README.crashpad b/third_party/crashpad/crashpad/third_party/lss/README.crashpad
+index 0229ba14eeca3..99d7edbc79d95 100644
+--- a/third_party/crashpad/crashpad/third_party/lss/README.crashpad
++++ b/third_party/crashpad/crashpad/third_party/lss/README.crashpad
+@@ -5,7 +5,7 @@ Version: N/A
+ Revision: DEPS
+ Update Mechanism: Manual
+ License: BSD-3-Clause
+-License File: lss/linux_syscall_support.h
++License File: //third_party/lss/linux_syscall_support.h
+ Security Critical: yes
+ Shipped: yes
+ 
+diff --git a/third_party/crashpad/crashpad/third_party/zlib/README.crashpad b/third_party/crashpad/crashpad/third_party/zlib/README.crashpad
+index c80fad1f2ab23..ddb57b9159a30 100644
+--- a/third_party/crashpad/crashpad/third_party/zlib/README.crashpad
++++ b/third_party/crashpad/crashpad/third_party/zlib/README.crashpad
+@@ -5,7 +5,7 @@ Version: N/A
+ Revision: See zlib/README.chromium
+ Update Mechanism: Manual
+ License: Zlib
+-License File: zlib/LICENSE
++License File: //third_party/zlib/LICENSE
+ Security Critical: yes
+ Shipped: yes
+ CPEPrefix: cpe:/a:zlib:zlib
+diff --git a/tools/licenses/integration_metadata/README.md b/tools/licenses/integration_metadata/README.md
+new file mode 100644
+index 0000000000000..0d4266a282b78
+--- /dev/null
++++ b/tools/licenses/integration_metadata/README.md
+@@ -0,0 +1,20 @@
++# Chromium integration metadata
++
++These README inputs describe six exact dependency/integration roots whose
++metadata cannot be carried at the normal location in the parent Chromium patch
++queue (DEPS/gitlinks or packaged toolchain files). They are parsed and validated
++by the ordinary metadata and license-file pipeline. They are not exclusions or
++license-text substitutes.
++
++An existing recognized dependency README always wins, including an invalid or
++empty one. Unknown roots receive no fallback. Missing metadata or referenced
++license files still fail strict scan. Versioned Rust crates retain their own
++metadata; the root entry describes only Chromium forwarding/build integration.
++Remove an integration entry when its upstream checkout supplies valid metadata.
++
++Each license file is existing source, referenced from the Chromium root. The
++Perfetto Chromium entry includes both BSD and Apache build-file headers. Crubit
++retains the complete Apache/LLVM and Unicode notice file; the latter corresponds
++to the SPDX Unicode-DFS-2015 text (https://spdx.org/licenses/Unicode-DFS-2015.html).
++LLVM's exception identifier is https://spdx.org/licenses/LLVM-exception.html.
++These are source attribution records, not a separate rights determination.
+diff --git a/tools/licenses/integration_metadata/catapult.README.chromium b/tools/licenses/integration_metadata/catapult.README.chromium
+new file mode 100644
+index 0000000000000..ddec36309d91b
+--- /dev/null
++++ b/tools/licenses/integration_metadata/catapult.README.chromium
+@@ -0,0 +1,11 @@
++Name: Catapult
++URL: https://chromium.googlesource.com/catapult.git
++Version: N/A
++Revision: DEPS
++License: BSD-3-Clause
++License File: //third_party/catapult/LICENSE
++Security Critical: yes
++Shipped: yes
++
++Description:
++Metadata for the DEPS-pinned Catapult checkout.
+diff --git a/tools/licenses/integration_metadata/chromium_rust.README.chromium b/tools/licenses/integration_metadata/chromium_rust.README.chromium
+new file mode 100644
+index 0000000000000..c09b8d2fb130b
+--- /dev/null
++++ b/tools/licenses/integration_metadata/chromium_rust.README.chromium
+@@ -0,0 +1,11 @@
++Name: Chromium Rust forwarding integration
++URL: https://chromium.googlesource.com/chromium/src/
++Version: N/A
++Revision: DEPS
++License: BSD-3-Clause
++License File: //LICENSE
++Security Critical: yes
++Shipped: yes
++
++Description:
++Only the Chromium-authored unversioned Rust forwarding BUILD.gn integration (icu_capi and temporal_capi) is described here. Versioned Rust crate dependencies retain their own separate metadata and licenses; this entry does not replace them.
+diff --git a/tools/licenses/integration_metadata/crubit.README.chromium b/tools/licenses/integration_metadata/crubit.README.chromium
+new file mode 100644
+index 0000000000000..9cd5d73aa72c0
+--- /dev/null
++++ b/tools/licenses/integration_metadata/crubit.README.chromium
+@@ -0,0 +1,11 @@
++Name: Crubit
++URL: https://github.com/google/crubit
++Version: N/A
++Revision: DEPS
++License: Apache-2.0 WITH LLVM-exception, Unicode-DFS-2015
++License File: //third_party/rust-toolchain/lib/third_party/crubit/LICENSE
++Security Critical: yes
++Shipped: yes
++
++Description:
++The packaged toolchain license file contains Apache-2.0 with LLVM exceptions and the complete Unicode 2015 permission notice applicable to is_utf8.h. Preserve the full file, including both sets of terms.
+diff --git a/tools/licenses/integration_metadata/marl.README.chromium b/tools/licenses/integration_metadata/marl.README.chromium
+new file mode 100644
+index 0000000000000..204274d74ac35
+--- /dev/null
++++ b/tools/licenses/integration_metadata/marl.README.chromium
+@@ -0,0 +1,11 @@
++Name: Marl
++URL: https://github.com/google/marl
++Version: N/A
++Revision: DEPS
++License: Apache-2.0
++License File: //third_party/swiftshader/third_party/marl/LICENSE
++Security Critical: yes
++Shipped: yes
++
++Description:
++Metadata for the pinned Marl dependency inside SwiftShader; its existing LICENSE supplies the full Apache-2.0 text.
+diff --git a/tools/licenses/integration_metadata/perfetto_android.README.chromium b/tools/licenses/integration_metadata/perfetto_android.README.chromium
+new file mode 100644
+index 0000000000000..da74b14892170
+--- /dev/null
++++ b/tools/licenses/integration_metadata/perfetto_android.README.chromium
+@@ -0,0 +1,11 @@
++Name: Perfetto Android protos
++URL: https://android.googlesource.com/platform/external/perfetto/
++Version: N/A
++Revision: DEPS
++License: Apache-2.0
++License File: //third_party/perfetto/LICENSE
++Security Critical: yes
++Shipped: yes
++
++Description:
++Android proto/build integration files retain their Apache-2.0 headers. The parent license file contains their full license text.
+diff --git a/tools/licenses/integration_metadata/perfetto_chromium.README.chromium b/tools/licenses/integration_metadata/perfetto_chromium.README.chromium
+new file mode 100644
+index 0000000000000..254ac1b179077
+--- /dev/null
++++ b/tools/licenses/integration_metadata/perfetto_chromium.README.chromium
+@@ -0,0 +1,11 @@
++Name: Perfetto Chromium protos
++URL: https://android.googlesource.com/platform/external/perfetto/
++Version: N/A
++Revision: DEPS
++License: BSD-3-Clause, Apache-2.0
++License File: //third_party/perfetto/LICENSE
++Security Critical: yes
++Shipped: yes
++
++Description:
++Chromium proto sources carry BSD headers; BUILD.gn carries Apache-2.0. The parent license file preserves both complete texts.
+diff --git a/tools/licenses/integration_metadata_test.py b/tools/licenses/integration_metadata_test.py
+new file mode 100644
+index 0000000000000..64668a5635aaa
+--- /dev/null
++++ b/tools/licenses/integration_metadata_test.py
+@@ -0,0 +1,93 @@
++#!/usr/bin/env python3
++# Copyright 2026 The Chromium Authors
++# Use of this source code is governed by a BSD-style license in LICENSE.
++"""Strict integration metadata is a normal parser input, never an exclusion."""
++import pathlib
++import tempfile
++import unittest
++import licenses
++
++COMPONENTS = {
++    'third_party/catapult': 'catapult',
++    'third_party/perfetto/protos/third_party/android': 'perfetto_android',
++    'third_party/perfetto/protos/third_party/chromium': 'perfetto_chromium',
++    'third_party/rust': 'chromium_rust',
++    'third_party/rust-toolchain/lib/third_party/crubit': 'crubit',
++    'third_party/swiftshader/third_party/marl': 'marl',
++}
++
++class IntegrationMetadataTest(unittest.TestCase):
++    def setUp(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.addCleanup(self.temp.cleanup)
++        self.root = pathlib.Path(self.temp.name)
++        (self.root / 'LICENSE').write_text('fixture BSD license text')
++        self.fallbacks = self.root / 'tools/licenses/integration_metadata'
++        self.fallbacks.mkdir(parents=True)
++        for path, name in COMPONENTS.items():
++            (self.root / path).mkdir(parents=True)
++            (self.fallbacks / (name + '.README.chromium')).write_text(self.metadata('Integrated ' + name))
++
++    def metadata(self, name):
++        return ('Name: ' + name + '\nURL: https://example.test/project\n'
++                'Version: DEPS\nLicense: BSD-3-Clause\nLicense File: //LICENSE\nShipped: yes\n')
++
++    def parse(self, path):
++        return licenses.ParseDir(path, str(self.root), require_license_file=True, enable_warnings=True)
++
++    def test_all_six_checkout_paths_use_validated_metadata(self):
++        for path, name in COMPONENTS.items():
++            with self.subTest(path=path):
++                metadata, errors = self.parse(path)
++                self.assertEqual(errors, [])
++                self.assertEqual(len(metadata), 1)
++                self.assertEqual(metadata[0]['Name'], 'Integrated ' + name)
++                self.assertEqual(metadata[0]['License File'], ['LICENSE'])
++                self.assertTrue((self.root / metadata[0]['License File'][0]).is_file())
++
++    def test_dependency_metadata_takes_precedence(self):
++        path = 'third_party/catapult'
++        (self.root / path / 'README.chromium').write_text(self.metadata('Upstream'))
++        metadata, errors = self.parse(path)
++        self.assertEqual(errors, [])
++        self.assertEqual([m['Name'] for m in metadata], ['Upstream'])
++
++    def test_bad_upstream_is_not_replaced_by_good_fallback(self):
++        path = 'third_party/catapult'
++        for contents in ('', 'Name: Incomplete\n'):
++            with self.subTest(contents=contents):
++                (self.root / path / 'README.chromium').write_text(contents)
++                metadata, errors = self.parse(path)
++                self.assertFalse(metadata)
++                self.assertTrue(errors)
++
++    def test_missing_fallback_remains_fatal(self):
++        (self.fallbacks / 'catapult.README.chromium').unlink()
++        with self.assertRaises(licenses.LicenseError):
++            self.parse('third_party/catapult')
++
++    def test_missing_referenced_license_remains_fatal(self):
++        (self.root / 'LICENSE').unlink()
++        metadata, errors = self.parse('third_party/catapult')
++        self.assertFalse(metadata)
++        self.assertTrue(errors)
++
++    def test_unknown_checkout_has_no_general_fallback(self):
++        path = 'third_party/unregistered'
++        (self.root / path).mkdir()
++        with self.assertRaises(licenses.LicenseError):
++            self.parse(path)
++
++    def test_crashpad_uses_existing_chromium_dependency_licenses(self):
++        source = pathlib.Path(licenses.__file__).resolve().parents[2]
++        for name, expected in [('lss', 'third_party/lss/linux_syscall_support.h'),
++                               ('zlib', 'third_party/zlib/LICENSE')]:
++            with self.subTest(component=name):
++                metadata, errors = licenses.ParseDir('third_party/crashpad/crashpad/third_party/' + name,
++                                                     str(source), require_license_file=True)
++                self.assertEqual(errors, [])
++                self.assertEqual(metadata[0]['License File'], [expected])
++                self.assertTrue((source / expected).is_file())
++
++if __name__ == '__main__':
++    unittest.main()
+diff --git a/tools/licenses/licenses.py b/tools/licenses/licenses.py
+index 7756e7cc514dc..82851cb407430 100755
+--- a/tools/licenses/licenses.py
++++ b/tools/licenses/licenses.py
+@@ -45,6 +45,24 @@ METADATA_FILE_NAMES = frozenset(
+   }
+ )
+ 
++# Some DEPS/gitlink and packaged-toolchain roots cannot carry Chromium-owned
++# metadata in this checkout. Keep their real README inputs in the parent queue.
++# These exact-path fallbacks apply only when no upstream README is present;
++# ParseMetadataFile/ProcessMetadata still validate every field and license file.
++INTEGRATION_READMES = {
++  os.path.join('third_party', 'catapult'): 'catapult',
++  os.path.join('third_party', 'perfetto', 'protos', 'third_party',
++               'android'): 'perfetto_android',
++  os.path.join('third_party', 'perfetto', 'protos', 'third_party',
++               'chromium'): 'perfetto_chromium',
++  os.path.join('third_party', 'rust'): 'chromium_rust',
++  os.path.join('third_party', 'rust-toolchain', 'lib', 'third_party',
++               'crubit'): 'crubit',
++  os.path.join('third_party', 'swiftshader', 'third_party',
++               'marl'): 'marl',
++}
++
++
+ _DEFAULT_FILE_TEMPLATE_FILE = os.path.join(
+   _REPOSITORY_ROOT,
+   'components',
+@@ -679,37 +697,48 @@ def ParseDir(
+   valid_metadata = []
+   directory_metadata = []
+ 
+-  for name in metadata_file_names:
+-    for readme_path in (pathlib.Path(root) / path).glob(name):
+-      readmes_in_dir = True
++  metadata_paths = [readme for name in metadata_file_names
++                    for readme in (pathlib.Path(root) / path).glob(name)]
++  if not metadata_paths and path in INTEGRATION_READMES:
++    integration_readme = (pathlib.Path(root) / 'tools' / 'licenses' /
++                          'integration_metadata' /
++                          (INTEGRATION_READMES[path] + '.README.chromium'))
++    if integration_readme.is_file():
++      metadata_paths = [integration_readme]
++
++  for readme_path in metadata_paths:
++    readmes_in_dir = True
+ 
+-      try:
+-        file_metadata = ParseMetadataFile(
+-          str(readme_path), optional_fields=optional_keys
++    try:
++      file_metadata = ParseMetadataFile(
++        str(readme_path), optional_fields=optional_keys
++      )
++      if not file_metadata:
++        errors.append(f"Empty metadata file: {readme_path}")
++        continue
++      for dependency_metadata in file_metadata:
++        meta_errors = ProcessMetadata(
++          dependency_metadata,
++          readme_path,
++          path,
++          root,
++          require_license_file=require_license_file,
++          enable_warnings=enable_warnings,
+         )
+-        for dependency_metadata in file_metadata:
+-          meta_errors = ProcessMetadata(
+-            dependency_metadata,
+-            readme_path,
+-            path,
+-            root,
+-            require_license_file=require_license_file,
+-            enable_warnings=enable_warnings,
+-          )
+ 
+-          if meta_errors:
+-            errors.append(
+-              "Errors in %s:\n %s\n"
+-              % (os.path.relpath(readme_path, root), ";\n ".join(meta_errors))
+-            )
+-            continue
++        if meta_errors:
++          errors.append(
++            "Errors in %s:\n %s\n"
++            % (os.path.relpath(readme_path, root), ";\n ".join(meta_errors))
++          )
++          continue
+ 
+-          if dependency_metadata:
+-            valid_metadata.append(dependency_metadata)
++        if dependency_metadata:
++          valid_metadata.append(dependency_metadata)
+ 
+-      except InvalidMetadata as e:
+-        errors.append(f"Invalid metadata file: {e}")
+-        continue
++    except InvalidMetadata as e:
++      errors.append(f"Invalid metadata file: {e}")
++      continue
+ 
+   if not readmes_in_dir:
+     raise LicenseError(
+-- 
+2.43.0
+

@@ -150,11 +150,11 @@ version and patch queue. Old public releases remain immutable.
 The target license-metadata scan is checked before compilation to avoid known
 unpublishable full builds, then again after exact-byte qualification. It must
 pass before packaging, source integration,
-public release or automatic deployment. Its existing missing-metadata failures
-remain unresolved in the manual candidate packet; local installed codec success
-is not distribution qualification. This means the controller defaults can be
-deployed now, while a future automated run may stop at qualification. It must
-preserve the accepted installed browser, not substitute a noncodec/CFT build.
+public release or automatic deployment. The known eight missing metadata/path failures are repaired by queued patch0003
+([repair evidence](dev/plans/0017-2026-11-14-strict-license-metadata.md)); strict
+target scan and generated notices pass. Local installed codec success alone is
+still not distribution qualification. Future new failures must stop qualification
+and preserve the accepted installed browser, never substitute noncodec/CFT.
 Do not adopt a privately staged codec installation as a published baseline.
 
 Managed runtime hosts retain their launch configuration. Successful future
