@@ -96,3 +96,38 @@ Memory disposition: `forbidden`, project Graphiti group is undefined and repo
 instructions retain source-backed continuity in docs without speculative
 cross-cloud writes. No write attempted. Receipt:
 `~/.graphiti-openclaw/state/closeout-memory/20261110T013041Z-remember.json`.
+
+## Approved execution: 2026-11-09
+
+Operator explicitly approved the concrete effect packet. PR #8 was created and
+merged through normal GitHub API with expected head 8daa8a2; merge commit
+1a7c2d44f9557eeb6cead9c1dc77db5b88e36fd4. The PR had mergeable_state=clean;
+local/qualification success records 83 local tests, 43 DCHECK Blink tests and CDP
+smoke. No hosted CI was purchased or required. Public PR:
+https://github.com/CochranResearchGroup/chromium-stealthcdp/pull/8
+
+Exact merged generation installed with script hashes verified. Timer remained
+enabled. Under exclusive controller.lock with service inactive, renamed the
+marked old builds root (source 16fc7584, failed am intact) to
+~/.local/state/chromium-stealthcdp/automation/builds-preserved-before-157-repair-1a7c2d4.
+No reset, am abort, deletion or retained-profile mutation occurred.
+
+Started one normal bounded updater invocation 0659e1d718314b2db842c797924a33e1.
+Verified CPU 800%, memory 34359738368 bytes, swap 0, timeout 12h and control-group
+cleanup. It fetched approved main and selected new run
+157.0.8103.50-587a95d8d49a7644. Resource preflight returned deferred at prepare:
+available memory 3880914944 bytes (3.61 GiB), disk 515278172160 bytes. Required
+memory 32GiB was unmet. Service exited success, inactive/MainPID 0. This is a
+resource gate, not a compiler or patch failure. No new compilation, release or
+deployment happened; installed browser remains 156.0.8078.73+stealthcdp.0279989f6f07.
+
+Private receipt: ~/.local/state/chromium-stealthcdp/qualification-157/recovery-execution.json.
+Run receipt remains under automation/runs/<new-run-id>/run.json. Remote merge,
+installed generation and approved-source readbacks bind integration outcome.
+No immediate retry: free workstation memory first; the enabled daily timer will
+retry this deferred target without --requeue, or a normal manual service start
+can do so after headroom recovers. Do not raise limits or kill unrelated work.
+
+Checkpoint: approved execution -> integrated/controller recovered -> deferred
+at resource gate. `blocker_reduction`: repair queue accepted and installed;
+full updater recovery remains open pending 32GiB headroom and .50 qualification.

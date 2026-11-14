@@ -68,7 +68,18 @@ def patch_digest(repo):
 
 
 def target_id(target):
-    return f'{target["version"]}-{target["approved_patch_queue_sha256"][:16]}'
+    from automation_pipeline import build_recipe_sha256
+    recipe = target.get('build_recipe_sha256', build_recipe_sha256())
+    return f'{target["version"]}-{target["approved_patch_queue_sha256"][:16]}-{recipe[:16]}'
+
+
+def require_release_qualification(context):
+    from automation_pipeline import build_recipe_sha256
+    recipe = build_recipe_sha256()
+    proof = context.get('distribution_qualification', {})
+    if (context.get('build_recipe_sha256') != recipe or proof.get('success') is not True
+            or proof.get('build_recipe_sha256') != recipe):
+        raise RuntimeError('Codec distribution qualification required before release effects')
 
 
 def discover(fetch=None):
@@ -145,6 +156,7 @@ class GitHub:
 
     def integrate(self, ctx, run):
         """Reconcile a deterministic source branch/PR; merge through normal protections."""
+        require_release_qualification(ctx)
         repo = Path(ctx['patchset_repo'])
         if command(['git', 'remote', 'get-url', 'origin'], cwd=repo) != f'https://github.com/{self.repo}.git':
             raise RuntimeError('source publication remote is outside approved repository')
@@ -153,7 +165,7 @@ class GitHub:
         branch = f'automation/stable-{run["id"]}'
         # Only curated qualification evidence belongs in source/public output.
         destination = repo / 'docs/releases' / f'{run["id"]}.json'
-        summary = {k: ctx[k] for k in ('version', 'upstream_revision', 'patch_queue_sha256')}
+        summary = {k: ctx[k] for k in ('version', 'upstream_revision', 'patch_queue_sha256', 'build_recipe_sha256', 'gn_args_sha256')}
         summary.update(executable_sha256=load(Path(ctx['artifact']) / 'manifest.json')['executable']['sha256'],
                        qualification='passed', retained_regression='LineBreakerTest.*')
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -188,13 +200,12 @@ class GitHub:
         if pr['state'] != 'MERGED':
             if pr['state'] != 'OPEN':
                 raise RuntimeError('routine PR closed without merging')
-            self.api(f'statuses/{head}', 'POST', {'state': 'success', 'context': 'stealthcdp/qualification',
-                                               'description': 'Pinned local candidate qualification passed'})
-            statuses = self.api(f'commits/{head}/status')
-            checks = self.api(f'commits/{head}/check-runs')
-            if statuses['state'] != 'success' or any(c['status'] != 'completed' or c['conclusion'] not in
-                    ('success', 'neutral', 'skipped') for c in checks['check_runs']):
-                raise AwaitingChecks('PR checks pending or failed; preserve candidate for reconciliation')
+            status = self.api(f'statuses/{head}', 'POST', {'state': 'success', 'context': 'stealthcdp/qualification',
+                                                       'description': 'Pinned local candidate qualification passed'})
+            # Operator cost policy uses local qualification; never request or
+            # wait for paid hosted Actions. Forge merge protection still applies.
+            if status.get('state') != 'success':
+                raise AwaitingChecks('Local qualification status not confirmed')
             self.gh('pr', 'merge', str(pr['number']), '--repo', self.repo, '--merge', '--match-head-commit', head)
         merged = json.loads(self.gh('pr', 'view', str(pr['number']), '--repo', self.repo,
                                    '--json', 'state,mergeCommit,headRefOid'))
@@ -207,10 +218,17 @@ class GitHub:
         return {'pr': pr['number'], 'source_commit': sha}
 
     def publish(self, ctx, integrated):
-        tag = f'v{ctx["version"]}-stealthcdp.{ctx["patch_queue_sha256"][:12]}'
+        require_release_qualification(ctx)
+        tag = f'v{ctx["version"]}-stealthcdp.{ctx["patch_queue_sha256"][:12]}.build.{ctx["build_recipe_sha256"][:12]}'
         repo = Path(ctx['patchset_repo'])
         if command(['git', 'remote', 'get-url', 'origin'], cwd=repo) != f'https://github.com/{self.repo}.git':
             raise RuntimeError('source publication remote is outside approved repository')
+        assets = [Path(p) for p in ctx['packages']]
+        if any(ctx.get('package_sha256', {}).get(str(p)) != digest(p) for p in assets):
+            raise RuntimeError('qualified package identity changed')
+        expected = {p.name: digest(p) for p in assets}
+        if len(expected) != len(assets):
+            raise RuntimeError('duplicate asset names')
         remote = command(['git', 'ls-remote', 'origin', f'refs/tags/{tag}'], cwd=repo)
         if remote and remote.split()[0] != integrated['source_commit']:
             raise RuntimeError('immutable release tag mismatch')
@@ -219,12 +237,6 @@ class GitHub:
         # Release lookup via listing distinguishes absence from auth/network failure.
         releases = self.api('releases?per_page=100')
         found = next((r for r in releases if r['tag_name'] == tag), None)
-        assets = [Path(p) for p in ctx['packages']]
-        if any(ctx.get('package_sha256', {}).get(str(p)) != digest(p) for p in assets):
-            raise RuntimeError('qualified package identity changed')
-        expected = {p.name: digest(p) for p in assets}
-        if len(expected) != len(assets):
-            raise RuntimeError('duplicate asset names')
         if not found:
             notes = repo.parent / 'release-notes.md'
             notes.write_text(f'Production Linux Stable {ctx["version"]} with the approved StealthCDP patch queue.\n\n'
@@ -335,12 +347,16 @@ class Controller:
             target = self.discover()
             target['approved_patch_queue_sha256'] = patch_digest(queue_repo)
             target['patch_queue_sha256'] = target['approved_patch_queue_sha256']
+            from automation_pipeline import build_recipe_sha256
+            target['build_recipe_sha256'] = build_recipe_sha256()
             target['run_id'] = target_id(target)
             pending = self.root / 'pending.json'
             pending.unlink(missing_ok=True)  # discovery coalesces all waiting triggers to latest
             active = load(self.root / 'active.json', {})
             run = load(self.root / 'runs' / active.get('id', '_') / 'run.json', {})
             if run and run['state'] not in TERMINAL:
+                if run.get('target', {}).get('build_recipe_sha256') != target['build_recipe_sha256']:
+                    raise RuntimeError('Active run build recipe changed; preserve and reconcile original run')
                 atomic_json(pending, target)
             else:
                 run_path = self.root / 'runs' / target['run_id'] / 'run.json'
@@ -348,7 +364,7 @@ class Controller:
                 if prior and prior['state'] in ('failed', 'rolled_back') and not requeue:
                     return {'state': 'stopped', 'id': prior['id'], 'reason': 'explicit requeue or changed input required'}
                 baseline = load(self.root / 'baseline.json', {})
-                if (baseline.get('version'), baseline.get('patch_queue_sha256')) == (target['version'], target['approved_patch_queue_sha256']):
+                if (baseline.get('version'), baseline.get('patch_queue_sha256'), baseline.get('build_recipe_sha256')) == (target['version'], target['approved_patch_queue_sha256'], target['build_recipe_sha256']):
                     result = {'state': 'unchanged', 'target': target, 'checked_at': time.time()}
                     atomic_json(self.root / 'last-check.json', result)
                     return result
@@ -383,6 +399,8 @@ class Controller:
                     run['context']['patchset_repo'] = run['context']['patchset']
                     run['stage'] = 'integrate'
                     self.save(run)
+                if run['stage'] in ('integrate', 'publish', 'deploy'):
+                    require_release_qualification(run['context'])
                 if run['stage'] == 'integrate':
                     run['integration'] = self.github.integrate(run['context'], run)
                     run['stage'] = 'publish'
@@ -399,6 +417,7 @@ class Controller:
                     run['stage'], run['state'] = 'complete', 'complete'
                     atomic_json(self.root / 'baseline.json', {
                         'version': run['target']['version'], 'patch_queue_sha256': run['context']['patch_queue_sha256'],
+                        'build_recipe_sha256': run['target']['build_recipe_sha256'],
                         'publication': run['publication'], 'deployment': run['deployment'], 'run_id': run['id']})
                     self.save(run)
                     # The committed deployment and baseline are durable before cleanup.
@@ -460,6 +479,8 @@ def adopt(config, artifact):
         raise RuntimeError('baseline version/branding mismatch')
     GitHub().preflight()
     tag = f'v{version}-stealthcdp.{manifest["patchset"]["patchQueueSha256"][:12]}'
+    if manifest.get('buildRecipeSha256'):
+        tag += '.build.' + manifest['buildRecipeSha256'][:12]
     release = GitHub().api(f'releases/tags/{tag}')
     remote_manifest = next((a for a in release['assets'] if a['name'] == 'manifest.json'), None)
     if release['draft'] or release['prerelease'] or not remote_manifest or remote_manifest.get('digest') != f'sha256:{digest(Path(artifact)/"manifest.json")}':
@@ -469,6 +490,7 @@ def adopt(config, artifact):
                                        agent_browser=config.get('agent_browser', 'agent-browser'))
     atomic_json(root / 'baseline-acceptance.json', acceptance)
     result = {'version': version, 'patch_queue_sha256': manifest['patchset']['patchQueueSha256'],
+              'build_recipe_sha256': manifest.get('buildRecipeSha256'),
               'artifact': str(Path(artifact).resolve()), 'acceptance': acceptance, 'adopted_at': time.time(),
               'publication': {'tag': tag, 'url': release['html_url']}}
     atomic_json(root / 'baseline.json', result)

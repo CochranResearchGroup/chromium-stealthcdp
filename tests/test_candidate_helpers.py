@@ -19,6 +19,32 @@ class CandidateHelperTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
 
+    @unittest.skipUnless(shutil.which('dpkg-deb'), 'Debian packaging tool required')
+    def test_codec_debian_identity_and_evidence_survive_packaging(self):
+        artifact=self.root/'artifact';runtime=artifact/'chrome-linux';runtime.mkdir(parents=True)
+        exe=runtime/'chrome';exe.write_text('#!/bin/sh\necho "Chromium 157.0.8103.78"\n');exe.chmod(0o755)
+        manifest={'schema':'chromium-stealthcdp.artifact.v1','platform':'linux',
+                  'chromeVersion':'Chromium 157.0.8103.78','buildRecipeSha256':'a'*64,
+                  'artifactName':'157.0.8103.78+stealthcdp.cccccccccccc.build.aaaaaaaaaaaa',
+                  'patchset':{'repoSha':'b'*40,'patchQueueSha256':'c'*64},
+                  'executable':{'relativePath':'chrome-linux/chrome'}}
+        (artifact/'manifest.json').write_text(json.dumps(manifest))
+        (artifact/'smoke.json').write_text('{}');(artifact/'patches.sha256').write_text('')
+        (artifact/'patches').mkdir();(artifact/'codec-qualification.json').write_text('{"accepted":true}')
+        for folder in ('codec-notices','codec-evidence'):
+            (artifact/folder).mkdir();(artifact/folder/'retained.txt').write_text('retained '+folder)
+        output=self.root/'packages'
+        result=subprocess.run(['bash',str(REPO/'scripts/package-deb.sh'),'--artifact',str(artifact),
+                               '--output-dir',str(output)],capture_output=True,text=True,timeout=30)
+        self.assertEqual(result.returncode,0,result.stderr)
+        package=next(output.glob('*.deb'))
+        version=subprocess.check_output(['dpkg-deb','-f',str(package),'Version'],text=True).strip()
+        self.assertEqual(version,'157.0.8103.78+stealthcdp.cccccccccccc.build.aaaaaaaaaaaa-1')
+        extracted=self.root/'extracted';subprocess.run(['dpkg-deb','-x',str(package),str(extracted)],check=True)
+        for folder in ('codec-notices','codec-evidence'):
+            self.assertEqual((extracted/'opt/chromium-stealthcdp'/folder/'retained.txt').read_text(),'retained '+folder)
+        self.assertTrue((extracted/'opt/chromium-stealthcdp/codec-qualification.json').exists())
+
     def test_smoke_reaps_children_and_preserves_unrelated_process(self):
         bindir = self.root / 'bin'
         bindir.mkdir()

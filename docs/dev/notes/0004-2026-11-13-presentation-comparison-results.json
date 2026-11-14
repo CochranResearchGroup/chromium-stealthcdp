@@ -1,0 +1,141 @@
+{
+  "schema": "stealthcdp.presentation-summary.v1",
+  "date": "2026-11-13",
+  "binaries": {
+    "stock": {
+      "sha256": "0ba9d6c54dbc1a46dfaa5f95d5975bc9b963030c8647880f5b6a537f8af7d2e8",
+      "version": "Google Chrome 153.0.8010.52"
+    },
+    "stealth": {
+      "sha256": "36294494abee9f0e304793797c8ebe8c70a65814f0924abf05b21a5511d12eaa",
+      "version": "Chromium 156.0.8078.73"
+    },
+    "agent": {
+      "sha256": "934f03443c98ccc92db21ea9f43c6a42148c81c3a7fe826eb472b3ee1bc335c5"
+    }
+  },
+  "selectedPayloads": 6,
+  "perMode": 2,
+  "transport": "loopback HTTP, secure context verified; TLS not measured",
+  "display": "manual rows on verified :0; managed display not proven equal",
+  "results": {
+    "managed-1": {
+      "webdriver": false,
+      "pageWorkerFrameIdentityConsistent": true,
+      "webgl": false,
+      "webgpu": false,
+      "h264Reported": "",
+      "aacReported": "",
+      "mp4Decoded": false,
+      "webmDecoded": true,
+      "unsolicitedPopupOpened": true,
+      "requestedCencH264WidevineConfigurationSupported": false,
+      "allFivePermissionStatesPrompt": true,
+      "pdfViewerEnabled": true,
+      "pluginListMatchesReference": true,
+      "pluginCount": 5
+    },
+    "managed-2": {
+      "webdriver": false,
+      "pageWorkerFrameIdentityConsistent": true,
+      "webgl": false,
+      "webgpu": false,
+      "h264Reported": "",
+      "aacReported": "",
+      "mp4Decoded": false,
+      "webmDecoded": true,
+      "unsolicitedPopupOpened": true,
+      "requestedCencH264WidevineConfigurationSupported": false,
+      "allFivePermissionStatesPrompt": true,
+      "pdfViewerEnabled": true,
+      "pluginListMatchesReference": true,
+      "pluginCount": 5
+    },
+    "manual-1": {
+      "webdriver": false,
+      "pageWorkerFrameIdentityConsistent": true,
+      "webgl": false,
+      "webgpu": false,
+      "h264Reported": "",
+      "aacReported": "",
+      "mp4Decoded": false,
+      "webmDecoded": true,
+      "unsolicitedPopupOpened": false,
+      "requestedCencH264WidevineConfigurationSupported": false,
+      "allFivePermissionStatesPrompt": true,
+      "pdfViewerEnabled": true,
+      "pluginListMatchesReference": true,
+      "pluginCount": 5
+    },
+    "manual-2": {
+      "webdriver": false,
+      "pageWorkerFrameIdentityConsistent": true,
+      "webgl": false,
+      "webgpu": false,
+      "h264Reported": "",
+      "aacReported": "",
+      "mp4Decoded": false,
+      "webmDecoded": true,
+      "unsolicitedPopupOpened": false,
+      "requestedCencH264WidevineConfigurationSupported": false,
+      "allFivePermissionStatesPrompt": true,
+      "pdfViewerEnabled": true,
+      "pluginListMatchesReference": true,
+      "pluginCount": 5
+    },
+    "stock-1": {
+      "webdriver": false,
+      "pageWorkerFrameIdentityConsistent": true,
+      "webgl": false,
+      "webgpu": false,
+      "h264Reported": "probably",
+      "aacReported": "probably",
+      "mp4Decoded": true,
+      "webmDecoded": true,
+      "unsolicitedPopupOpened": false,
+      "requestedCencH264WidevineConfigurationSupported": true,
+      "allFivePermissionStatesPrompt": true,
+      "pdfViewerEnabled": true,
+      "pluginListMatchesReference": true,
+      "pluginCount": 5
+    },
+    "stock-2": {
+      "webdriver": false,
+      "pageWorkerFrameIdentityConsistent": true,
+      "webgl": false,
+      "webgpu": false,
+      "h264Reported": "probably",
+      "aacReported": "probably",
+      "mp4Decoded": true,
+      "webmDecoded": true,
+      "unsolicitedPopupOpened": false,
+      "requestedCencH264WidevineConfigurationSupported": true,
+      "allFivePermissionStatesPrompt": true,
+      "pdfViewerEnabled": true,
+      "pluginListMatchesReference": true,
+      "pluginCount": 5
+    }
+  },
+  "rawPayloadSha256": {
+    "managed-1": "6241ab0c6251df90550ac89f72e3af0bccccfd5592247ffb40d52ba819c062ca",
+    "managed-2": "2b28912bb9180e0f56eab62dfd7007fb52346fddb636163377926858f65cd1ed",
+    "manual-1": "14df8da6929de91c0b523f33c672e15953418f0e83c34e389ed0b2271d47beb0",
+    "manual-2": "14df8da6929de91c0b523f33c672e15953418f0e83c34e389ed0b2271d47beb0",
+    "stock-1": "96e25f08670ebca6f047d60632d5c321b1ec8c286f65ef2589b8587d41c01ffd",
+    "stock-2": "96e25f08670ebca6f047d60632d5c321b1ec8c286f65ef2589b8587d41c01ffd"
+  },
+  "cleanup": {
+    "selectedPayloadBrowserPidsGone": true,
+    "ownedProfileWritersRemaining": 0,
+    "fourManualDisposableProfilesRemoved": true,
+    "interruptedTaskRetired": true
+  },
+  "limitations": [
+    "Chrome153 versus Chromium156 version confound",
+    "Managed display differs or is unproven; graphics not isolated",
+    "Selected managed payloads retained from harness runs that subsequently failed display assertions",
+    "Generic font/initial geometry samples are unstable and excluded from pass claims",
+    "Single CENC/H264 EME configuration; CDM absence and DRM playback not established",
+    "No third-party detector, HTTPS/TLS, beforeunload dialog or real provider acceptance"
+  ]
+}

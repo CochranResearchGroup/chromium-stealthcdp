@@ -81,6 +81,9 @@ if (!patchsetSha) {
 const patchQueueSha = manifest.patchset && manifest.patchset.patchQueueSha256;
 const packageIdentitySha = patchQueueSha || patchsetSha;
 const artifactName = manifest.artifactName || `${versionNumber}+stealthcdp.${packageIdentitySha.slice(0, 12)}`;
+if (manifest.buildRecipeSha256 && !/^[a-f0-9]{64}$/.test(manifest.buildRecipeSha256)) {
+  throw new Error('invalid build recipe digest');
+}
 const executable = manifest.executable && manifest.executable.relativePath;
 if (!executable) {
   throw new Error('manifest does not include executable relative path');
@@ -89,6 +92,7 @@ console.log(JSON.stringify({
   versionNumber,
   artifactName,
   patchsetShort: packageIdentitySha.slice(0, 12),
+  recipeSuffix: manifest.buildRecipeSha256 ? `.build.${manifest.buildRecipeSha256.slice(0, 12)}` : "",
   executable,
 }));
 NODE
@@ -97,7 +101,8 @@ NODE
 version_number="$(node -e 'const m=JSON.parse(process.argv[1]); console.log(m.versionNumber)' "$metadata")"
 patchset_short="$(node -e 'const m=JSON.parse(process.argv[1]); console.log(m.patchsetShort)' "$metadata")"
 executable_rel="$(node -e 'const m=JSON.parse(process.argv[1]); console.log(m.executable)' "$metadata")"
-package_version="${version_number}+stealthcdp.${patchset_short}-${revision}"
+recipe_suffix="$(node -e 'const m=JSON.parse(process.argv[1]); console.log(m.recipeSuffix)' "$metadata")"
+package_version="${version_number}+stealthcdp.${patchset_short}${recipe_suffix}-${revision}"
 deb_name="${package_name}_${package_version}_amd64.deb"
 
 if [[ ! -x "$artifact/$executable_rel" ]]; then
@@ -159,6 +164,11 @@ cp -a "$artifact/manifest.json" "$install_root/manifest.json"
 cp -a "$artifact/smoke.json" "$install_root/smoke.json"
 cp -a "$artifact/patches.sha256" "$install_root/patches.sha256"
 cp -a "$artifact/patches" "$install_root/patches"
+if [[ -n "$recipe_suffix" ]]; then
+  cp -a "$artifact/codec-qualification.json" "$install_root/codec-qualification.json"
+  cp -a "$artifact/codec-notices" "$install_root/codec-notices"
+  cp -a "$artifact/codec-evidence" "$install_root/codec-evidence"
+fi
 ln -s /opt/chromium-stealthcdp/chrome "$stage/usr/bin/chromium-stealthcdp"
 
 mkdir -p "$stage/usr/share/applications"

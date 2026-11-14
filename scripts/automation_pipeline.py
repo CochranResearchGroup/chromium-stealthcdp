@@ -29,7 +29,20 @@ dcheck_always_on=false
 is_chrome_for_testing=false
 is_chrome_for_testing_branded=false
 use_siso=false
+proprietary_codecs=true
+ffmpeg_branding="Chrome"
+is_chrome_branded=false
 '''
+
+
+def build_recipe_sha256():
+    """Identity of codec configuration and the actual decoder acceptance seam."""
+    harness = Path(__file__).with_name('codec-acceptance.mjs').read_bytes()
+    return hashlib.sha256(GN_ARGS.encode() + b'codec-acceptance-v1\n' + harness).hexdigest()
+
+
+def artifact_name(version, queue, recipe):
+    return f'{version}+stealthcdp.{queue[:12]}.build.{recipe[:12]}'
 
 
 class PipelineError(RuntimeError):
@@ -170,6 +183,8 @@ class CandidatePipeline:
         revision = str(target.get('upstream_revision', ''))
         if revision and not re.fullmatch(r'[a-f0-9]{40}', revision):
             raise PipelineError('Invalid pinned upstream revision')
+        if target.get('build_recipe_sha256', build_recipe_sha256()) != build_recipe_sha256():
+            raise PipelineError('Target build recipe changed since selection')
         queue = patch_queue_sha256(self.repo / 'patches')
         approved = target.get('approved_patch_queue_sha256', target.get('patch_queue_sha256'))
         if queue != approved:
@@ -184,6 +199,7 @@ class CandidatePipeline:
             raise PipelineError('Invalid managed-root ownership marker')
         run = self.root / 'runs' / run_id
         context = {**target, 'version': version, 'approved_patch_queue_sha256': queue,
+                   'build_recipe_sha256': build_recipe_sha256(),
                    'run_root': str(run), 'evidence': str(run / 'evidence'),
                    'src': str(self.root / 'checkout' / 'src'), 'out': f'out/Automation-{run_id}',
                    'patchset': str(run / 'patchset')}
@@ -194,6 +210,8 @@ class CandidatePipeline:
             if old['version'] != version or old['approved_patch_queue_sha256'] != queue:
                 raise PipelineError('Run identity reused for different inputs')
             if old.get('stage') in ('prepared', 'built', 'qualified', 'packaged'):
+                if old.get('build_recipe_sha256') != build_recipe_sha256():
+                    raise PipelineError('Candidate build recipe changed; preserve old context')
                 self.check_source(old)
                 return old
             raise PipelineError('Interrupted source preparation requires explicit repair, not reset')
@@ -299,6 +317,8 @@ class CandidatePipeline:
             raise PipelineError('Exported patch queue changed')
 
     def build(self, context):
+        if context.get('build_recipe_sha256') != build_recipe_sha256():
+            raise PipelineError('Candidate build recipe mismatch')
         if context['stage'] in ('built', 'qualified', 'packaged'):
             return context
         self.check_source(context)
@@ -310,11 +330,29 @@ class CandidatePipeline:
             raise PipelineError('Candidate GN configuration drift')
         args.write_text(GN_ARGS)
         self.command(context, ['gn', 'gen', context['out']], cwd=src)
-        self.command(context, ['autoninja', '-C', context['out'], '-j', str(self.config.jobs), 'chrome', 'blink_unittests'], cwd=src)
+        resolved = {}
+        for key, expected in (('proprietary_codecs', 'true'), ('ffmpeg_branding', '"Chrome"'),
+                              ('is_chrome_branded', 'false'), ('is_chrome_for_testing', 'false'),
+                              ('is_chrome_for_testing_branded', 'false')):
+            value = self.command(context, ['gn', 'args', context['out'], '--list=' + key, '--short'], cwd=src)
+            if re.sub(r'\s+', '', value) != key + '=' + expected:
+                raise PipelineError('Resolved GN mismatch: ' + key)
+            resolved[key] = expected
+        context['resolved_gn'] = resolved
+        # Detect the known distribution metadata gap before spending a full
+        # compile. Final qualification repeats this after byte-level tests.
+        self.command(context, ['python3', src / 'tools/licenses/licenses.py', 'scan',
+                               '--gn-out-dir', context['out'], '--gn-target', '//chrome:chrome',
+                               '--target-os', 'linux'], cwd=src)
+        context['distribution_preflight'] = {'success': True, 'build_recipe_sha256': context['build_recipe_sha256']}
+        self.command(context, ['autoninja', '-C', context['out'], '-j', str(self.config.jobs),
+                               'chrome', 'blink_unittests', 'media_unittests'], cwd=src)
         context['gn_args_sha256'] = sha256(args)
         return self.save(context, 'built')
 
     def qualify(self, context):
+        if context.get('build_recipe_sha256') != build_recipe_sha256():
+            raise PipelineError('Candidate build recipe mismatch')
         if context['stage'] in ('qualified', 'packaged'):
             return context
         if context['stage'] != 'built':
@@ -343,13 +381,23 @@ class CandidatePipeline:
         smoke_data = json.loads(smoke.read_text())
         if smoke_data.get('success') is not True or smoke_data.get('checks', {}).get('navigatorWebdriver') != 'false':
             raise PipelineError('Active-CDP webdriver qualification failed')
+        media_xml = evidence / 'media.xml'
+        self.command(context, [out / 'media_unittests',
+                               '--gtest_filter=FFmpegVideoDecoderTest.*:FFmpegAACBitstreamConverterTest.*:AACTest.*',
+                               '--test-launcher-jobs=1', f'--gtest_output=xml:{media_xml}', '--no-sandbox'], cwd=src)
+        media_tests = list(ET.parse(media_xml).getroot().iter('testcase'))
+        if not media_tests or any(t.find('failure') is not None or t.find('skipped') is not None
+                                 or t.get('status') == 'notrun' for t in media_tests):
+            raise PipelineError('Media regression selection failed or skipped tests')
+        self.codec_acceptance(context, out / 'chrome', evidence / 'candidate-codecs')
         stage = Path(context['run_root']) / 'artifacts'
-        artifact = stage / f'{context["version"]}+stealthcdp.{context["patch_queue_sha256"][:12]}'
+        artifact = stage / artifact_name(context['version'], context['patch_queue_sha256'], context['build_recipe_sha256'])
         if artifact.is_symlink():
             raise PipelineError('Staged candidate must be an owned directory, not a symlink')
         if not artifact.exists():
             self.command(context, [Path(context['patchset']) / 'scripts/promote-artifact.sh', '--src-out', out,
-                                   '--artifact-root', stage, '--smoke-json', smoke])
+                                   '--artifact-root', stage, '--smoke-json', smoke,
+                                   '--build-recipe-sha256', context['build_recipe_sha256']])
         # An interrupted qualification may have already promoted this immutable
         # candidate. Reconcile its provenance below, never overwrite/rebuild it.
         artifact = artifact.resolve(strict=True)
@@ -358,21 +406,72 @@ class CandidatePipeline:
         if (manifest['chromium']['upstreamRevision'] != context['upstream_revision'] or
             manifest['chromium']['sourceSha'] != context['source_sha'] or
             manifest['patchset']['patchQueueSha256'] != context['patch_queue_sha256'] or
+            manifest.get('buildRecipeSha256') != context['build_recipe_sha256'] or
             manifest['chromium']['dirty'] or manifest['patchset']['dirty'] or
             sha256(out / 'chrome') != manifest['executable']['sha256'] or
             sha256(artifact / manifest['executable']['relativePath']) != manifest['executable']['sha256']):
             raise PipelineError('Staged provenance mismatch')
         self.command(context, [self.repo / 'scripts/smoke.sh', '--chrome', artifact / manifest['executable']['relativePath'],
                                '--output', evidence / 'staged-smoke.json'], timeout=90)
+        self.codec_acceptance(context, artifact / manifest['executable']['relativePath'], evidence / 'staged-codecs')
         from automation_deploy import qualify_agent_browser
         acceptance = qualify_agent_browser(artifact / manifest['executable']['relativePath'], manifest,
                                            agent_browser=self.config.agent_browser, installed=False)
         write_json(evidence / 'agent-browser-candidate.json', acceptance)
+        # A local codec pass is not distribution qualification. A nonzero scan
+        # stops before packages, integration, release publication or deployment.
+        self.command(context, ['python3', src / 'tools/licenses/licenses.py', 'scan',
+                               '--gn-out-dir', context['out'], '--gn-target', '//chrome:chrome',
+                               '--target-os', 'linux'], cwd=src)
+        context['distribution_qualification'] = {'success': True, 'kind': 'target_license_metadata_scan',
+                                                 'build_recipe_sha256': context['build_recipe_sha256']}
+        write_json(artifact / 'codec-qualification.json', {
+            'buildRecipeSha256': context['build_recipe_sha256'], 'gnArgsSha256': context['gn_args_sha256'],
+            'resolvedGN': context.get('resolved_gn'), 'executableSha256': manifest['executable']['sha256'],
+            'distribution': context['distribution_qualification']})
+        codec_evidence = artifact / 'codec-evidence'
+        codec_evidence.mkdir(exist_ok=True)
+        for path, name in ((evidence / 'candidate-codecs/result.json', 'candidate-decoder.json'),
+                           (evidence / 'staged-codecs/result.json', 'staged-decoder.json'),
+                           (xml, 'line-breaker.xml'), (media_xml, 'media.xml')):
+            shutil.copy2(path, codec_evidence / name)
+        notices = artifact / 'codec-notices'
+        notices.mkdir(exist_ok=True)
+        for name, path in (('Chromium-LICENSE', src / 'LICENSE'),
+                           ('FFmpeg-README.chromium', src / 'third_party/ffmpeg/README.chromium'),
+                           ('FFmpeg-CREDITS.chromium', src / 'third_party/ffmpeg/CREDITS.chromium')):
+            shutil.copy2(path, notices / name)
         context['qualification'] = {'line_breaker_tests': len(tests), 'browser_pgo': context['browser_pgo'],
-                                    'gn_args_sha256': context['gn_args_sha256'], 'v8_revision': context['v8_revision']}
+                                    'gn_args_sha256': context['gn_args_sha256'], 'v8_revision': context['v8_revision'],
+                                    'media_tests': len(media_tests), 'actual_codecs': ['h264', 'aac', 'webm']}
         return self.save(context, 'qualified')
 
+    def codec_acceptance(self, context, executable, root):
+        """Require real video frames and independent AAC PCM, bound to bytes."""
+        result_path = root / 'result.json'
+        if not result_path.exists():
+            self.command(context, ['node', self.repo / 'scripts/codec-acceptance.mjs',
+                                   '--chrome', executable, '--artifact-root', root], timeout=120)
+        report = json.loads(result_path.read_text())
+        observed = report.get('observed', {})
+        if (report.get('success') is not True or not report.get('profileWritersGone') or
+            report.get('sha256') != sha256(executable) or
+            report.get('harnessSha256') != sha256(self.repo / 'scripts/codec-acceptance.mjs') or
+            observed.get('webdriver') is not False or
+            any(observed.get(k, {}).get('decoded') is not True or observed[k].get('frames', 0) <= 0
+                for k in ('h264', 'webm')) or observed.get('aac', {}).get('decoded') is not True or
+            observed.get('aac', {}).get('samples', 0) <= 40000 or observed.get('aac', {}).get('rms', 0) <= 0.01):
+            raise PipelineError('Actual codec acceptance failed or binary identity mismatch')
+        return report
+
     def package(self, context):
+        if context['stage'] not in ('qualified', 'packaged'):
+            raise PipelineError('Only qualified candidates may package')
+        if context.get('build_recipe_sha256') != build_recipe_sha256():
+            raise PipelineError('Candidate build recipe mismatch')
+        if (not context.get('distribution_qualification', {}).get('success') or
+            context['distribution_qualification'].get('build_recipe_sha256') != context['build_recipe_sha256']):
+            raise PipelineError('Distribution qualification required before packaging')
         if context['stage'] == 'packaged':
             for filename, digest in context['package_sha256'].items():
                 if sha256(Path(filename)) != digest:

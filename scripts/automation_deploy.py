@@ -9,6 +9,8 @@ import copy
 import hashlib
 import json
 import os
+import pwd
+import re
 from pathlib import Path
 import shutil
 import signal
@@ -88,6 +90,191 @@ def _command(argv, timeout=90, runtime_env=None):
     if value.get('success') is not True:
         raise DeploymentError('Agent Browser reported failure: ' + str(value.get('error')))
     return value.get('data')
+
+
+RUNTIME_HOST_UNIT = 'agent-browser-runtime-host.service'
+
+
+def _runtime_real_home():
+    # HOME overrides used by fixtures must not grant access to real user units.
+    return Path(pwd.getpwuid(os.getuid()).pw_dir).resolve()
+
+
+def _runtime_systemd(argv):
+    """One fixed user-unit operation; callers validate ownership before restart."""
+    result = subprocess.run(['systemctl', *argv], capture_output=True, text=True, timeout=45)
+    if result.returncode:
+        raise DeploymentError('Runtime-host systemd operation failed: ' + result.stderr[-1000:])
+    if 'show' in argv:
+        return dict(line.split('=', 1) for line in result.stdout.splitlines() if '=' in line)
+    return result.stdout
+
+
+def _runtime_process_identity(pid):
+    process = Path('/proc') / str(pid)
+    fields = (process / 'stat').read_text().rsplit(')', 1)[1].split()
+    return {'pid': int(pid), 'startTicks': fields[19], 'uid': process.stat().st_uid,
+            'executable': os.readlink(process / 'exe')}
+
+
+def _runtime_is_browser_root(raw_command_line):
+    """Chromium may flatten argv into one string; NUL-only parsing is unsafe."""
+    command = raw_command_line.replace(b'\0', b' ').decode('utf-8', errors='replace')
+    if re.search(r'(?:^|\s)--type=', command):
+        return False
+    if not re.search(r'(?:^|\s)--user-data-dir=\S', command):
+        raise DeploymentError('Installed browser root identity is incomplete')
+    return True
+
+
+def _runtime_browser_roots(root):
+    """Snapshot only user-owned installed browser roots; no process is signalled."""
+    root = Path(root).resolve()
+    browsers = []
+    for process in Path('/proc').iterdir():
+        if not process.name.isdigit():
+            continue
+        try:
+            if process.stat().st_uid != os.getuid():
+                continue
+            executable = Path(os.readlink(process / 'exe').removesuffix(' (deleted)'))
+            if not executable.is_relative_to(root) or executable.name not in ('chrome', 'chromium'):
+                continue
+            if not _runtime_is_browser_root((process / 'cmdline').read_bytes()):
+                continue
+            browsers.append(_runtime_process_identity(int(process.name)))
+        except (FileNotFoundError, ProcessLookupError):
+            continue
+        except PermissionError as exc:
+            raise DeploymentError('Installed browser process custody is unavailable') from exc
+    return browsers
+
+
+def refresh_managed_runtime(root, *, home=None, agent_browser='agent-browser', record=None):
+    """Refresh cached launch configuration without terminating retained browsers.
+
+    Only the real user's selected, active shared unit with KillMode=process may
+    restart. Isolated fixture homes explicitly skip all systemd/process effects.
+    Readiness here is unit/process plus service-job observation; fresh managed
+    browser acceptance remains a separate deployment boundary.
+    """
+    home = Path(home or Path.home()).resolve()
+    receipt = {'schema': 'stealthcdp.managed-runtime-refresh.v1', 'unit': RUNTIME_HOST_UNIT,
+               'home': str(home), 'restartAttempted': False, 'state': 'preflight'}
+
+    def publish():
+        if record:
+            record(copy.deepcopy(receipt))
+
+    if home != _runtime_real_home():
+        receipt['state'] = 'skipped_isolated_home'
+        publish()
+        return receipt
+    show = ['--user', 'show', RUNTIME_HOST_UNIT, '--property=LoadState', '--property=ActiveState',
+            '--property=SubState', '--property=MainPID', '--property=KillMode', '--property=FragmentPath']
+    try:
+        selected = (home / '.local/lib/agent-browser/current/bin/agent-browser').resolve(strict=True)
+        invoking = Path(shutil.which(str(agent_browser)) or str(agent_browser)).resolve(strict=True)
+        if invoking != selected:
+            raise DeploymentError('Runtime refresh requires the selected executable')
+
+        def verified_unit():
+            unit = _runtime_systemd(show)
+            if unit.get('KillMode') != 'process':
+                raise DeploymentError('Runtime-host KillMode must be process')
+            if (unit.get('LoadState'), unit.get('ActiveState'), unit.get('SubState')) != ('loaded', 'active', 'running'):
+                raise DeploymentError('Runtime host is not loaded, active and running')
+            fragment = Path(unit.get('FragmentPath', '')).resolve(strict=True)
+            if not fragment.is_relative_to(home) or fragment.stat().st_uid != os.getuid():
+                raise DeploymentError('Runtime-host unit ownership is unproven')
+            pid = int(unit.get('MainPID', '0'))
+            if pid < 2:
+                raise DeploymentError('Runtime-host MainPID is unproven')
+            identity = _runtime_process_identity(pid)
+            if identity['uid'] != os.getuid() or identity['executable'] != str(selected):
+                raise DeploymentError('Runtime-host MainPID differs from selected executable')
+            return identity
+
+        def idle_service():
+            # The installed CLI consumes --state as a global saved-state flag.
+            # Inspect one complete bounded inventory instead of trusting that filter.
+            limit = 10000
+            jobs = _command([str(invoking), 'service', 'jobs', '--limit', str(limit), '--json'])
+            rows = jobs.get('jobs') if isinstance(jobs, dict) else None
+            if (not isinstance(rows, list) or len(rows) > limit
+                    or any(type(jobs.get(key)) is not int or jobs[key] != len(rows)
+                           for key in ('count', 'matched', 'total'))):
+                raise DeploymentError('Runtime refresh requires a complete service jobs snapshot')
+            terminal = {'succeeded', 'failed', 'cancelled', 'timed_out'}
+            if any(not isinstance(row, dict) or row.get('state') not in terminal for row in rows):
+                raise DeploymentError('Runtime refresh refused active service jobs or unknown states')
+            receipt['serviceJobs'] = {'count': len(rows), 'complete': True, 'allTerminal': True,
+                                      'queryLimit': limit}
+
+        before = verified_unit()
+        browsers = _runtime_browser_roots(root)
+        receipt.update(previousHost=before, retainedBrowsers=browsers)
+        idle_service()
+        # Recheck exact host custody immediately before the only restart effect.
+        if verified_unit() != before:
+            raise DeploymentError('Runtime-host identity changed before refresh')
+        receipt.update(state='restarting', restartAttempted=True)
+        publish()
+        _runtime_systemd(['--user', 'restart', RUNTIME_HOST_UNIT])
+        deadline = time.monotonic() + 30
+        while True:
+            try:
+                after = verified_unit()
+                if after == before:
+                    raise DeploymentError('Runtime-host process was not refreshed')
+                idle_service()
+                break
+            except (DeploymentError, OSError, ValueError):
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(.2)
+        for original in browsers:
+            if _runtime_process_identity(original['pid']) != original:
+                raise DeploymentError('Runtime refresh changed a retained browser identity')
+        receipt.update(state='ready', currentHost=after,
+                       preservedBrowserPids=[row['pid'] for row in browsers],
+                       readiness='selected_unit_process_and_idle_service_jobs')
+        publish()
+        return receipt
+    except Exception as exc:
+        receipt.update(state='failed', error=str(exc))
+        publish()
+        raise DeploymentError('Managed runtime refresh failed: ' + str(exc), receipt) from exc
+
+
+def qualify_managed_browser(root, manifest, state_dir, repo_root, *, home=None,
+                            agent_browser='agent-browser'):
+    """Fresh public MCP launch proof; never starts a provider from a fixture home."""
+    home = Path(home or Path.home()).resolve()
+    if home != _runtime_real_home():
+        return {'state': 'skipped_isolated_home', 'browserLaunched': False}
+    executable = Path(shutil.which(str(agent_browser)) or str(agent_browser)).resolve(strict=True)
+    selected = (home / '.local/lib/agent-browser/current/bin/agent-browser').resolve(strict=True)
+    if executable != selected:
+        raise DeploymentError('Managed MCP acceptance requires the selected Agent Browser executable')
+    evidence = Path(state_dir) / 'managed-acceptance' / uuid.uuid4().hex
+    evidence.mkdir(parents=True, mode=0o700)
+    argv = ['node', str(Path(repo_root) / 'scripts/managed-browser-acceptance.mjs'),
+            str(executable), str(Path(root) / 'current/manifest.json'), str(evidence)]
+    try:
+        command = subprocess.run(argv, capture_output=True, text=True, timeout=180)
+        (evidence / 'stdout.log').write_text(command.stdout)
+        (evidence / 'stderr.log').write_text(command.stderr)
+    except subprocess.TimeoutExpired as exc:
+        raise DeploymentError('Managed MCP acceptance timed out; inspect original task key and receipt',
+                              {'evidenceRoot': str(evidence), 'outcome': 'unknown'}) from exc
+    path = evidence / 'result.json'
+    receipt = json.loads(path.read_text()) if path.exists() else {'evidenceRoot': str(evidence)}
+    if (command.returncode != 0 or receipt.get('success') is not True
+            or receipt.get('browserSha256') != manifest['executable']['sha256']
+            or receipt.get('profileWritersGone') is not True):
+        raise DeploymentError('Fresh managed MCP browser acceptance failed', receipt)
+    return receipt
 
 
 def _owned_tree(pid):
@@ -261,7 +448,7 @@ def _restore(path, value):
     os.replace(temporary, path)
 
 
-def recover_deployment(state_dir: Path):
+def recover_deployment(state_dir: Path, *, agent_browser='agent-browser'):
     """Fail closed after interruption: roll back a prepared, uncommitted transaction."""
     state_dir = Path(state_dir)
     journal = state_dir / 'deployment-transaction.json'
@@ -273,6 +460,15 @@ def recover_deployment(state_dir: Path):
     for path, snapshot in value['before'].items():
         _restore(Path(path), snapshot)
     value.update(status='rolled_back', reason='interrupted deployment recovered')
+    if value.get('runtimeRefreshHome'):
+        rollback_home = Path(value['runtimeRefreshHome'])
+        try:
+            value['rollbackRuntimeRefresh'] = refresh_managed_runtime(
+                rollback_home / '.local/share/chromium-stealthcdp', home=rollback_home,
+                agent_browser=agent_browser)
+        except DeploymentError as exc:
+            value.update(status='rollback_refresh_failed', rollbackRuntimeRefresh=exc.receipt,
+                         rollbackRefreshError=str(exc))
     atomic_json(journal, value)
     atomic_json(state_dir / 'deployment-halted.json', value)
     return value
@@ -282,7 +478,7 @@ def deploy(candidate: Path, state_dir: Path, repo_root: Path, *, home: Path | No
            agent_browser='agent-browser'):
     home = Path(home or Path.home())
     state_dir = Path(state_dir)
-    recover_deployment(state_dir)
+    recover_deployment(state_dir, agent_browser=agent_browser)
     if (state_dir / 'deployment-halted.json').exists():
         raise DeploymentError('Deployment halted; inspect rollback receipt and explicitly clear halt after repair')
     candidate = Path(candidate).resolve(strict=True)
@@ -299,7 +495,8 @@ def deploy(candidate: Path, state_dir: Path, repo_root: Path, *, home: Path | No
     paths = [root / 'current', home / '.local/bin/chromium-stealthcdp',
              data / 'applications/chromium-stealthcdp.desktop', data / 'applications/mimeinfo.cache', config_path]
     journal = {'status': 'prepared', 'artifactName': manifest['artifactName'],
-               'before': {str(path): _snapshot(path) for path in paths}, 'startedAt': time.time()}
+               'before': {str(path): _snapshot(path) for path in paths}, 'startedAt': time.time(),
+               'runtimeRefreshHome': str(home.resolve())}
     journal_path = state_dir / 'deployment-transaction.json'
     atomic_json(journal_path, journal)
     try:
@@ -309,6 +506,13 @@ def deploy(candidate: Path, state_dir: Path, repo_root: Path, *, home: Path | No
         if result.returncode:
             raise DeploymentError('User installer failed: ' + result.stderr[-3000:])
         atomic_json(config_path, config)
+        def record_refresh(receipt):
+            journal['runtimeRefresh'] = receipt
+            atomic_json(journal_path, journal)
+        journal['runtimeRefresh'] = refresh_managed_runtime(
+            root, home=home, agent_browser=agent_browser, record=record_refresh)
+        journal['managedAcceptance'] = qualify_managed_browser(
+            root, manifest, state_dir, repo_root, home=home, agent_browser=agent_browser)
         acceptance = qualify_agent_browser(root / 'current' / manifest['executable']['relativePath'], manifest,
                                             config_path=config_path, agent_browser=agent_browser, installed=True)
         version = root / manifest['artifactName']
@@ -322,6 +526,12 @@ def deploy(candidate: Path, state_dir: Path, repo_root: Path, *, home: Path | No
         for path, snapshot in journal['before'].items():
             _restore(Path(path), snapshot)
         journal.update(status='rolled_back', error=str(exc), completedAt=time.time())
+        try:
+            journal['rollbackRuntimeRefresh'] = refresh_managed_runtime(
+                root, home=home, agent_browser=agent_browser)
+        except DeploymentError as refresh_error:
+            journal.update(status='rollback_refresh_failed', rollbackRuntimeRefresh=refresh_error.receipt,
+                           rollbackRefreshError=str(refresh_error))
         if isinstance(exc, DeploymentError):
             journal['acceptanceFailure'] = exc.receipt
         atomic_json(journal_path, journal)

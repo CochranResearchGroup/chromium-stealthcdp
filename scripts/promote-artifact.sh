@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/promote-artifact.sh --src-out PATH [--artifact-root PATH] [--smoke-json PATH] [--platform linux|win]
+Usage: scripts/promote-artifact.sh --src-out PATH [--artifact-root PATH] [--smoke-json PATH] [--platform linux|win] [--build-recipe-sha256 HEX]
 
 Promotes a built Chromium output directory into a versioned chromium-stealthcdp
 runtime artifact. The source build must already pass the matching smoke script.
@@ -14,6 +14,7 @@ src_out=""
 artifact_root=""
 smoke_json=""
 platform="linux"
+build_recipe_sha=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -27,6 +28,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --smoke-json)
       smoke_json="${2:-}"
+      shift 2
+      ;;
+    --build-recipe-sha256)
+      build_recipe_sha="${2:-}"
       shift 2
       ;;
     --platform)
@@ -116,6 +121,10 @@ patch_queue_sha="$(
 )"
 patchset_short="${patch_queue_sha:0:12}"
 artifact_name="${version_number}+stealthcdp.${patchset_short}"
+if [[ -n "$build_recipe_sha" ]]; then
+  [[ "$build_recipe_sha" =~ ^[a-f0-9]{64}$ ]] || { echo 'invalid build recipe digest' >&2; exit 2; }
+  artifact_name="$artifact_name.build.${build_recipe_sha:0:12}"
+fi
 dest="$artifact_root/$artifact_name"
 
 if [[ -e "$dest" ]]; then
@@ -223,6 +232,7 @@ cp -a "$smoke_json" "$dest/$smoke_rel"
 ) > "$dest/patches.sha256"
 
 manifest_tmp="$dest/manifest.json.tmp"
+BUILD_RECIPE_SHA="$build_recipe_sha" \
 ARTIFACT_NAME="$artifact_name" \
 ARTIFACT_PATH="$dest" \
 CHROME_VERSION="$chrome_version" \
@@ -255,6 +265,7 @@ function sha256(file) {
 
 const manifest = {
   schema: 'chromium-stealthcdp.artifact.v1',
+  ...(process.env.BUILD_RECIPE_SHA ? {buildRecipeSha256: process.env.BUILD_RECIPE_SHA} : {}),
   artifactName: process.env.ARTIFACT_NAME,
   platform: process.env.PLATFORM,
   promotedAt: process.env.PROMOTED_AT,

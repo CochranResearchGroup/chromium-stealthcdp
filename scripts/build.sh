@@ -6,6 +6,7 @@ usage() {
 Usage: scripts/build.sh [--src PATH] [--out OUT] [--target TARGET] [--target-os linux|win] [--depot-tools PATH] [--gn-args TEXT]
 
 Generates GN args when needed and builds a patched Chromium checkout.
+Chrome for Testing is prohibited; both testing flags must resolve to false.
 
 Defaults:
   linux: --out out/Default --target chrome
@@ -106,6 +107,8 @@ case "$target_os" in
     ;;
 esac
 
+gn_args="$gn_args is_chrome_for_testing=false is_chrome_for_testing_branded=false"
+
 out_dir="$src/$out"
 
 if [[ ! -f "$out_dir/args.gn" ]]; then
@@ -116,6 +119,16 @@ if [[ ! -f "$out_dir/args.gn" ]]; then
 else
   echo "using existing GN args: $out_dir/args.gn"
 fi
+
+# Query resolved GN values, including imported args and Chromium defaults.
+# Refuse unsafe existing outputs rather than silently rewriting their configuration.
+for flag in is_chrome_for_testing is_chrome_for_testing_branded; do
+  resolved="$(cd "$src" && gn args "$out" "--list=$flag" --short)"
+  if [[ ! "$resolved" =~ ^[[:space:]]*$flag[[:space:]]*=[[:space:]]*false[[:space:]]*$ ]]; then
+    echo "Chrome for Testing is prohibited: $flag must resolve to false in $out_dir" >&2
+    exit 2
+  fi
+done
 
 (
   cd "$src"

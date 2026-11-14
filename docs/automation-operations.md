@@ -12,8 +12,9 @@ The user timer `chromium-stealthcdp-update.timer` checks at 03:00 America/Chicag
 and catches up after downtime. The service limits compilation to eight jobs,
 CPU to eight equivalents, memory to 32 GiB without swap and elapsed time to
 12 hours. It runs with low CPU/I/O priority. Builds defer if available memory
-is below 32 GiB or free disk below 200 GiB. An unchanged Stable version and
-approved queue return `unchanged` without building or publishing.
+is below 32 GiB or free disk below 200 GiB. An unchanged Stable version, approved queue and build recipe return `unchanged`
+without building or publishing. Legacy/no-recipe receipts cannot suppress codec
+qualification or resume as current artifacts.
 
 ```
 chromium-stealthcdp-update             # start the bounded service manually
@@ -37,8 +38,9 @@ smoke. Candidate Agent Browser selection verifies the actual OS executable
 hash. Portable/Debian package identities are checked before the source PR.
 
 Routine PRs receive an explicit local qualification status and merge through
-the normal GitHub API only after observed status/check suites pass. Repository
-protections still apply. Pending checks retain the candidate for a later check.
+the normal GitHub API after the pinned local qualification status is confirmed.
+Repository merge protections still apply. Paid hosted Actions are not requested
+or used as the qualification boundary.
 A deterministic tag/draft release and server asset digest readback reconcile
 publication interruption; differing identities stop rather than overwrite.
 
@@ -68,7 +70,14 @@ notes and run receipts. No raw private logs or secrets are published.
 
 ## Installation / controller upgrades
 
-From a clean committed checkout:
+Controller changes follow a short-lived branch, PR review, passing local checks,
+merge into `main`, then installation from that clean merged source. Hosted GitHub
+CI is not funded; do not enable it. Preserve recorded local validation rather
+than waiting on billing-blocked hosted runs. After installation compare both the
+`current` controller generation and config `source_repo` with the merged SHA.
+Routine patch-queue fetching updates inputs only, not the immutable controller.
+
+From that clean merged checkout:
 
 ```
 python3 scripts/install-automation.py --depot-tools /absolute/depot_tools
@@ -120,3 +129,47 @@ installed service reconciles that key; an existing failed/pending action does
 not silently become a fresh send. Unconfirmed actions stay in the outbox for
 readback on later checks, with no automatic new-key resend. If Slack is
 unavailable, the existing GitHub failure issue and local receipts remain.
+
+
+## Codec build and release identity
+
+Routine GN configuration explicitly enables proprietary codecs with FFmpeg's
+`Chrome` codec configuration; Chromium branding remains unbranded and both
+Chrome-for-Testing flags must resolve false. All five values are read back from
+GN before compilation. The accepted installed codec candidate demonstrated
+H264 video frames and independent AAC PCM; automatic qualification runs the same
+actual decoder seam on original and staged bytes plus WebM, active-CDP smoke,
+LineBreakerTest and selected FFmpeg/AAC media tests.
+
+The recipe SHA covers GN arguments and the decoder harness. It participates in
+controller target/run/output identity, baseline no-op/resume checks, immutable
+artifact manifests/names, release tags and Debian versions. A codec-only change
+therefore cannot reuse or overwrite a noncodec release with the same upstream
+version and patch queue. Old public releases remain immutable.
+
+The target license-metadata scan is checked before compilation to avoid known
+unpublishable full builds, then again after exact-byte qualification. It must
+pass before packaging, source integration,
+public release or automatic deployment. Its existing missing-metadata failures
+remain unresolved in the manual candidate packet; local installed codec success
+is not distribution qualification. This means the controller defaults can be
+deployed now, while a future automated run may stop at qualification. It must
+preserve the accepted installed browser, not substitute a noncodec/CFT build.
+Do not adopt a privately staged codec installation as a published baseline.
+
+Managed runtime hosts retain their launch configuration. Successful future
+installation must refresh only the verified production host using its preserving
+KillMode=process supervisor, require a complete unfiltered job snapshot with only known terminal states,
+verify original browser PID/
+start/executable identities survive, and prove fresh disposable managed-MCP
+selection against the installed digest. Temporary-home fixture runs never touch
+real systemd. Config/file restoration on rollback also refreshes cached launch
+selection. Readiness/job observations are not an atomic admission lease; retain
+that concurrency limitation and any interrupted effects for reconciliation.
+
+
+The current Agent Browser CLI globally consumes `--state` before service-jobs
+filtering. Refresh therefore uses unfiltered `service jobs --limit 10000 --json`
+and requires integer count/matched/total equal to the returned row count. Missing,
+truncated, queued/running/lease-waiting or unknown-state results block restart.
+This preserves the existing observation boundary; it is not an admission lease.

@@ -20,6 +20,9 @@ def main():
     args = parser.parse_args()
     if run('git', '-C', REPO, 'status', '--porcelain'):
         raise SystemExit('Commit all controller changes before installing an immutable generation')
+    ffmpeg = shutil.which('ffmpeg')
+    if not ffmpeg:
+        raise SystemExit('ffmpeg is required for actual H264/AAC qualification')
     sha = run('git', '-C', REPO, 'rev-parse', 'HEAD')
     home = Path.home()
     root = home / '.local/lib/chromium-stealthcdp-automation'
@@ -47,7 +50,7 @@ def main():
         return '"' + str(path).replace('\\', '\\\\').replace('"', '\\"').replace('%', '%%') + '"'
     units = home / '.config/systemd/user'
     units.mkdir(parents=True, exist_ok=True)
-    path = ':'.join([str(home / '.local/bin'), str(args.depot_tools.resolve()), '/usr/local/bin', '/usr/bin', '/bin'])
+    path = ':'.join([str(home / '.local/bin'), str(args.depot_tools.resolve()), str(Path(ffmpeg).parent), '/usr/local/bin', '/usr/bin', '/bin'])
     service = f'''[Unit]
 Description=Qualify, publish and deploy Chromium StealthCDP Linux Stable
 After=network-online.target

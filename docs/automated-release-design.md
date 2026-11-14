@@ -22,7 +22,7 @@ users or machines.
 
 1. Check the official Linux Stable identity daily at **03:00 America/Chicago**,
    catching up once after workstation unavailability. Support a manual trigger.
-   An unchanged upstream version and approved patch queue produce no rebuild or
+   An unchanged upstream version, approved patch queue and build recipe produce no rebuild or
    duplicate publication.
 2. Permit one pinned run at a time. Coalesce additional triggers into the newest
    pending target; finish the current pinned run before starting that target.
@@ -32,10 +32,12 @@ users or machines.
    patch queue and review the resulting source delta. A conflict is a repair
    case, not a routine update.
 4. Build normal Chromium with the accepted official release configuration and
-   explicit non-testing branding. Stage in a candidate root without changing
+   explicit non-testing Chromium branding and H264/AAC codec settings. Query
+   resolved codec/branding GN values before compilation. Stage in a candidate root without changing
    the installed/current release.
 5. Require exact tag/version and provenance, clean patch replay, matching build
-   configuration and optimization profiles, focused regressions for every
+   configuration/recipe identity and optimization profiles, actual H264/AAC/WebM
+   decoding, distribution metadata qualification, focused regressions for every
    retained repair, active-CDP smoke with `navigator.webdriver=false`, package
    hash/provenance checks and an isolated Agent Browser acceptance check.
    For the currently retained Blink repair this includes its exact regression
