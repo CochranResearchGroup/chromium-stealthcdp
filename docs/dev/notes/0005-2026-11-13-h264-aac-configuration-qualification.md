@@ -1,11 +1,13 @@
 # H.264/AAC configuration qualification
 
 Date: 2026-11-13
-Status: configuration and dedicated candidate qualification accepted; installed
-adoption accepted after explicit2026-11-14 cutover; distribution qualification
-remain pending. Codec-preserving updater defaults are deployed through
-[plan0016](../plans/0016-2026-11-14-codec-updater-continuity.md); the first new
-public codec release still requires the strict distribution gate.
+Status: configuration, candidate qualification and installed adoption accepted.
+Codec-preserving updater defaults are deployed through
+[plan0016](../plans/0016-2026-11-14-codec-updater-continuity.md). The known strict
+license-metadata blocker is repaired and passes in
+[plan0017](../plans/0017-2026-11-14-strict-license-metadata.md). A new public codec
+release still requires the full normal build/decoder/package/release pipeline.
+
 
 Follow-up: [plan0015](../plans/0015-2026-11-13-codec-enabled-candidate.md) records
 the built/staged Chromium157 candidate, actual H264/AAC/WebM decoder passes,
