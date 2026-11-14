@@ -1,17 +1,18 @@
 # Codec-enabled Chromium StealthCDP candidate
 
-State: OPEN
+State: CLOSED
 Owner: primary Codex agent
 Source repo: 38aa4b7e00213847ffb8bfc9e33373317ab32501
 Authority: operator approved build, actual MP4 acceptance, review and promotion.
 
 ## Current State
 
-Attempt1 reached61,651/62,075 steps then hit the supervisor runtime limit.
-One bounded incremental retry is active with unchanged source/GN/output.
-Configuration qualification is complete in note0005. Full compilation,
-actual H264 and independent AAC decoding, exact-byte smoke/regressions and
-candidate staging remain. Installed browser and automatic updater are unchanged.
+The codec-enabled Chromium157 candidate is built, independently reviewed,
+qualified and promoted into its dedicated candidate root. Actual H264 frames,
+AAC PCM and WebM, active-CDP smoke and80 focused regressions pass; staged bytes
+were retested successfully. Installed156.73 and updater defaults remain unchanged.
+Distribution qualification remains open after upstream metadata scan failures.
+
 
 ## Scope and acceptance
 
@@ -130,3 +131,60 @@ replay of the original. No browser executable exists at retry admission.
 Interim memory disposition:not_durable; still-running compilation is transient,
 with no terminal qualified release outcome. Source-backed continuity retained
 here and in attributable private receipts.
+
+
+## Checkpoint 3 | candidate qualified and staged
+
+State transition: active -> complete (bounded build/test/staging packet).
+Progress: outcome_progress. Retry2 built successfully in2460.038 seconds,
+within its2h limit. Attempt1 timeout39284.297 seconds remains; cumulative recorded
+wall spend41744.335 seconds, not a claim about stable-clock elapsed limits.
+No third attempt. Both scheduled completion wakes delivered and were reconciled.
+
+| Acceptance | Verified result |
+| --- | --- |
+| Browser | Chromium157.0.8103.78, source e71aaa2a1effe15abe00fc43fc712acc961a28d4 |
+| Executable SHA256 | 39b260e9a9bf5129571aa41d916504442213ce09db2f4f8faa3067f81d516265 |
+| Build configuration | Original args/queue/PGO hashes unchanged; proprietary_codecs=true, ffmpeg_branding=Chrome; is_chrome_branded=false and both testing flags=false |
+| Actual H264 |64x64,10 decoded frames, completed playback |
+| Independent AAC |44099 PCM samples at44100Hz,0.999977s, mono, tone RMS0.088482 |
+| WebM control |64x64,10 decoded frames, completed playback |
+| Active CDP | smoke success=true, navigator.webdriver=false |
+| LineBreakerTest.* |43 pass,0fail/skip/notrun, including BreakWordWithReusedShapeResult |
+| Selected media |37 pass,0fail/skip/notrun; FFmpegVideoDecoderTest.*, FFmpegAACBitstreamConverterTest.*, AACTest.* |
+| Staged-byte acceptance | Same executable SHA, decoder H264/AAC/WebM and active-CDP smoke pass again |
+| Cleanup | Both decoder test profiles removed after writers absent; fresh OS inspection confirms zero owned writers |
+
+Independent closed-world review: PASS, zero blocking findings against the frozen
+codec/source/configuration/regression criteria. Primary verified raw receipt
+hashes/XML and accepted the findings. The reviewer also accepted private staging
+scope despite the separate metadata-scan failure; no license eligibility claim.
+
+Staged artifact:
+/home/ecochran76/workspace.local/chromium/artifacts/chromium-stealthcdp-candidates/codec-20261113/157.0.8103.78+stealthcdp.243270639b11
+
+Staging used the matching157 qualified patchset helper, upstream base
+4b3d0dabb8250b6f152d2d85d79e7706e309d087 and queue243270639b11, not the retained
+local156 queue. Source and patchset clean, manifest digests verified. Only this
+dedicated candidate root's current alias changed. codec-qualification.json binds
+GN/source/queue/binary identity because the original artifact name lacks GN hash.
+codec-evidence/ retains decoder/smoke/XML/build receipts and failed metadata log;
+codec-notices/ preserves Chromium LICENSE and FFmpeg README/CREDITS.
+
+License metadata command: python3 tools/licenses/licenses.py scan --gn-out-dir
+out/CodecCandidate-20261113 --gn-target //chrome:chrome --target-os linux.
+Exit1 identifies missing upstream metadata/license entries including crashpad
+zlib, perfetto generated dependency directories, Rust/crubit and swiftshader marl.
+This is failed/open distribution qualification, not a codec test failure and not
+repaired in this packet. No public packaging/publication, redistribution-rights
+claim, Widevine/CDM integration or updater-default change.
+
+Installed browser remains156.0.8078.73 with SHA256
+36294494abee9f0e304793797c8ebe8c70a65814f0924abf05b21a5511d12eaa. No shared
+platform-neutral alias, install selection, retained profile or downstream live
+session changed. Local cutover is a separate explicit deployment decision; this
+packet closes qualified dedicated-root staging, not installed codec adoption.
+
+Memory disposition: unavailable for a project-cloud write because no reviewed
+Chromium Graphiti group is configured; durable outcome/provenance retained here
+and in the staged evidence. No speculative destination or duplicate memory write.

@@ -1,7 +1,13 @@
 # H.264/AAC configuration qualification
 
 Date: 2026-11-13
-Status: configuration accepted; candidate compilation and browser playback pending.
+Status: configuration and dedicated candidate qualification accepted; installed
+adoption and distribution qualification remain pending.
+
+Follow-up: [plan0015](../plans/0015-2026-11-13-codec-enabled-candidate.md) records
+the built/staged Chromium157 candidate, actual H264/AAC/WebM decoder passes,
+80 focused regressions and exact staged-byte smoke. The configuration-only
+evidence below is retained as its original checkpoint.
 
 ## Outcome
 
@@ -73,7 +79,9 @@ untouched; there was no automatic retry or requeue.
    updater adoption. Widevine/CDM integration is a separate capability: the
    earlier CENC/H.264 EME rejection cannot distinguish missing codecs from CDMs.
 
-A full browser build and codec-enabled adoption remain unexecuted. Do not flip
+At this original configuration checkpoint, the full build and adoption were
+unexecuted. Candidate build/playback is now qualified in plan0015; installed
+adoption is still pending. Do not flip
 release-controller defaults or claim MP4 support from GN generation alone.
 The immediate Agent Browser popup repair is tracked separately in
 [issue693](https://github.com/CochranResearchGroup/agent-browser/issues/693).
