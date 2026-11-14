@@ -1,17 +1,20 @@
 # Repair strict target license metadata
 
-State: OPEN
+State: CLOSED
 Owner: primary Codex agent
 Authority: operator requests fixing the remaining license-metadata gate; prior
 PR/review/merge/deployment authorization continues. No browser replacement.
 
 ## Current State
 
-Strict target scan on clean source39f8185e reproduces8 errors (exit1), retained
-under private license-repair-20261114/. Installedcodec39b260e9 and controller
-1e2aa85 remain accepted. No scan exclusions, warning suppression or artificial
-Shipped:no flags are allowed. Existing license text and source headers are the
-attribution authority, not invented metadata or a claim of legal entitlement.
+PR16 is merged and its clean controller/queue source deployed. The repaired
+strict target scan passes both directly and through the deployed controller's
+command runner. Queue77cf30af contains3 patches; the previous2 are unchanged.
+Installed codec39b260e9 and runtime host55935 are preserved across deployment.
+No scan exclusions, warning suppression or artificial Shipped:no flags were
+used. This removes the known metadata blocker, not the normal remaining
+build/decoder/package/release gates or an independent rights determination.
+
 
 ## Scope and acceptance
 
@@ -102,3 +105,29 @@ navigator.webdriver=false is separately recorded; no rebuilt-browser claim.
 Frozen full scan receipt confirms exit0 at d689a50 with codec args digestc48179af.
 All source-facing checks ran native Linux/WSL with existing depot_tools; no hosted
 CI. Plan remains OPEN only until source PR and merged-generation readback finish.
+
+
+## Merged source and adoption | 2026-11-14
+
+PR: https://github.com/CochranResearchGroup/chromium-stealthcdp/pull/16
+Reviewed headf2f62218b71e1ae15176bb8df7a61c50c70c16aa; merge
+ebc78fcbd1e0c47d55f43991c35d1a32562d380d. Local qualification status posted;
+49 passing tests, frozen full scan, output generation and exact replay reviewed.
+No hosted CI. Clean merged-generation installation ran under controller.lock.
+Config source_repo/current generation both matched the merge; installed queue
+contains3 patches and digest77cf30afe35623fe3f1f1cc3c2ece6c4f4191ba655cb3461b2613b44b39e92d5.
+Recipe343b4878 and GN arguments c48179af are unchanged; both CFT flags remainfalse.
+
+The deployed pipeline command runner executed the original strict target scan
+against clean repaired sourced689a50 and exited0. It performed no compilation,
+publication or runtime deployment. Controller source adoption receipt and its
+command log are retained privately. Current daily timer remains active/enabled.
+Installed browser digest39b260e9a9bf5129571aa41d916504442213ce09db2f4f8faa3067f81d516265
+and runtime hostPID55935 match immediate pre-install readbacks. Source lease was
+released cleanly; operator ../src remains clean15a1e89.
+
+The subsequent docs-only closeout may advance main; source/patch queue closure
+must remain byte-identical to ebc78fc before final generation adoption/readback.
+No new browser build or public codec release is inferred from this metadata fix.
+Memory disposition: unavailable because no reviewed Chromium project Graphiti
+group is configured; durable qualification and deployment evidence remain here.
