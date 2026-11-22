@@ -2,6 +2,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -59,6 +60,50 @@ class PipelineSafetyTests(unittest.TestCase):
             'approved_patch_queue_sha256': self.target['patch_queue_sha256'], 'stage': 'preparing'}))
         with self.assertRaisesRegex(PipelineError, 'explicit repair'):
             self.pipeline.prepare(self.target)
+
+    def test_prepare_preserves_libsync_when_upstream_replaces_gitlink(self):
+        self.root.mkdir()
+        (self.root / '.chromium-stealthcdp-automation-owned').write_text('chromium-stealthcdp automation v1\n')
+        src = self.root / 'checkout/src'
+        dependency = src / 'third_party/libsync/src'
+        dependency.mkdir(parents=True)
+
+        def git(cwd, *args):
+            return subprocess.check_output(
+                ['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', *args],
+                cwd=cwd, stderr=subprocess.STDOUT, text=True).strip()
+
+        git(src, 'init', '-q')
+        git(dependency, 'init', '-q')
+        (dependency / 'NOTICE').write_text('old dependency')
+        git(dependency, 'add', 'NOTICE')
+        git(dependency, 'commit', '-qm', 'Dependency')
+        git(src, 'add', 'third_party/libsync/src')
+        git(src, 'commit', '-qm', 'Gitlink')
+        old = git(src, 'rev-parse', 'HEAD')
+        saved = self.base / 'old-dependency'
+        dependency.rename(saved)
+        git(src, 'rm', '--cached', 'third_party/libsync/src')
+        dependency.mkdir()
+        (dependency / 'NOTICE').write_text('new upstream file')
+        git(src, 'add', 'third_party/libsync/src')
+        git(src, 'commit', '-qm', 'Vendor dependency')
+        git(src, 'tag', self.target['version'])
+        git(src, 'remote', 'add', 'origin', str(src))
+        git(src, 'checkout', '--detach', old)
+        saved.rename(dependency)
+
+        def runner(args, *, cwd, **kwargs):
+            if args[:2] == ['gclient', 'sync']:
+                self.assertEqual((dependency / 'NOTICE').read_text(), 'new upstream file')
+                raise PipelineError('Fixture reached dependency sync')
+            return git(cwd, *args[1:])
+
+        with self.assertRaisesRegex(PipelineError, 'Fixture reached dependency sync'):
+            CandidatePipeline(self.config, runner=runner).prepare(self.target)
+        preserved = list(self.root.glob('runs/test/**/libsync-src/NOTICE'))
+        self.assertEqual([path.read_text() for path in preserved], ['old dependency'])
+        self.assertTrue((preserved[0].parent / '.git').is_dir())
 
     def test_fetch_retries_only_identified_transport_failure_once(self):
         calls = []

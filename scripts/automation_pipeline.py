@@ -14,6 +14,7 @@ import re
 import shutil
 import signal
 import subprocess
+import tempfile
 from dataclasses import dataclass
 import time
 import xml.etree.ElementTree as ET
@@ -173,6 +174,26 @@ class CandidatePipeline:
         write_json(Path(context['run_root']) / 'candidate.json', context)
         return context
 
+    def preserve_replaced_libsync(self, context, src, revision):
+        relative = 'third_party/libsync/src'
+        dependency = src / relative
+        if dependency.resolve() != dependency or not (dependency / '.git').is_dir():
+            return
+        old = self.command(context, ['git', 'ls-tree', 'HEAD', '--', relative], cwd=src)
+        if not old.startswith('160000 commit '):
+            return
+        new = self.command(context, ['git', 'ls-tree', revision, '--', relative], cwd=src)
+        if not new.startswith('040000 tree '):
+            return
+        dependency_head = self.command(context, ['git', 'rev-parse', 'HEAD'], cwd=dependency)
+        if dependency_head != old.split()[2]:
+            raise PipelineError('Managed libsync checkout has an unexpected revision')
+        if self.command(context, ['git', 'status', '--porcelain'], cwd=dependency):
+            raise PipelineError('Managed libsync checkout is dirty; refusing to move it')
+        backup = Path(tempfile.mkdtemp(prefix='upstream-transition-', dir=context['run_root']))
+        dependency.rename(backup / 'libsync-src')
+        dependency.mkdir()
+
     def prepare(self, target: dict) -> dict:
         version = str(target['version'])
         if not re.fullmatch(r'\d+\.\d+\.\d+\.\d+', version):
@@ -228,6 +249,7 @@ class CandidatePipeline:
         if revision and revision != actual:
             raise PipelineError('Official version tag does not match pinned upstream SHA')
         context['upstream_revision'] = actual
+        self.preserve_replaced_libsync(context, src, actual)
         self.command(context, ['git', 'checkout', '--detach', actual], cwd=src)
         config = "solutions = [{'name':'src','url':" + repr(UPSTREAM) + ",'managed':False,'custom_deps':{},'custom_vars':{'checkout_pgo_profiles':True}}]\ntarget_os = ['linux']\n"
         gclient = checkout / '.gclient'
