@@ -20,7 +20,7 @@ users or machines.
 
 ## Routine update
 
-1. Check the official Linux Stable identity daily at **03:00 America/Chicago**,
+1. Check the official Linux Stable identity weekly on **Sunday at 03:00 America/Chicago**,
    catching up once after workstation unavailability. Support a manual trigger.
    An unchanged upstream version, approved patch queue and build recipe produce no rebuild or
    duplicate publication.
@@ -65,10 +65,10 @@ runtime output.
 
 | Control | Accepted limit |
 | --- | --- |
-| Parallel compilation | Eight jobs |
-| CPU | Eight CPU-equivalents, low priority |
-| Memory | 32 GiB ceiling |
-| Run duration | Twelve hours |
+| Parallel compilation and dependency sync | Two jobs by default, eight in the standard profile |
+| CPU | Two CPU equivalents by default, eight in the standard profile. Low priority in both |
+| Memory | 16 GiB ceiling by default, 32 GiB in the standard profile. No swap in either |
+| Run duration | 36 hours by default, 12 hours in the standard profile |
 | Free-disk reserve | 200 GiB |
 | I/O | Low priority |
 | Local good installed releases | Active, previous and one additional release |

@@ -35,7 +35,7 @@ def message(outcome):
     elif state != 'test':
         text += '\nDetails are in the local updater receipts and GitHub failure issue, when available.'
     else:
-        text += '\nFuture upgrade successes and failures will be sent here. Unchanged daily checks stay quiet.'
+        text += '\nFuture upgrade successes and failures will be sent here. Unchanged weekly checks stay quiet.'
     return text
 
 

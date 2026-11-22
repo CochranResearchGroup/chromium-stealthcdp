@@ -15,6 +15,8 @@ import time
 import urllib.error
 import urllib.request
 
+from automation_profiles import BUILD_PROFILES
+
 REPOSITORY = 'CochranResearchGroup/chromium-stealthcdp'
 STABLE_URL = 'https://chromiumdash.appspot.com/fetch_releases?channel=Stable&platform=Linux&num=1'
 class AwaitingChecks(RuntimeError):
@@ -103,12 +105,12 @@ def discover(fetch=None):
     return {'version': version, 'upstream_revision': revision}
 
 
-def headroom(path, meminfo='/proc/meminfo'):
+def headroom(path, meminfo='/proc/meminfo', *, memory_gib):
     memory = dict((k.rstrip(':'), int(v)) for k, v, *_ in
                   (line.split() for line in Path(meminfo).read_text().splitlines()))
     free = shutil.disk_usage(path).free
     # Leave workstation memory outside the enforced service ceiling.
-    return {'ready': free >= 200 * 1024**3 and memory['MemAvailable'] >= 32 * 1024**2,
+    return {'ready': free >= 200 * 1024**3 and memory['MemAvailable'] >= memory_gib * 1024**2,
             'free_disk_bytes': free, 'available_memory_bytes': memory['MemAvailable'] * 1024}
 
 
@@ -273,6 +275,8 @@ class GitHub:
 class Controller:
     def __init__(self, config, github=None, discover_fn=discover, pipeline_factory=None, deploy_fn=None):
         self.config = config
+        self.build_profile_name = config.get('build_profile', 'standard')
+        self.build_profile = BUILD_PROFILES[self.build_profile_name]
         self.root = Path(config['state_dir'])
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.github = github or GitHub()
@@ -383,7 +387,8 @@ class Controller:
                 self.save(run)
             try:
                 if run['stage'] == 'prepare':
-                    budget = headroom(self.root)
+                    budget = headroom(self.root, memory_gib=self.build_profile.memory_gib)
+                    run['build_profile'] = self.build_profile_name
                     run['headroom'] = budget
                     if not budget['ready']:
                         run['state'] = 'deferred'
@@ -394,7 +399,9 @@ class Controller:
                     factory = self.pipeline_factory or CandidatePipeline
                     pipeline = factory(PipelineConfig(repo=repo, managed_root=self.root / 'builds',
                                                        depot_tools=Path(self.config['depot_tools']),
-                                                       agent_browser=self.config.get('agent_browser', 'agent-browser')))
+                                                       agent_browser=self.config.get('agent_browser', 'agent-browser'),
+                                                       jobs=self.build_profile.jobs,
+                                                       command_timeout=self.build_profile.hours * 3600))
                     run['context'] = pipeline.run(run['target'])
                     run['context']['patchset_repo'] = run['context']['patchset']
                     run['stage'] = 'integrate'
