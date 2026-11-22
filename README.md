@@ -191,6 +191,6 @@ produce the toolchain zip.
 
 ## Automated Linux Stable updates
 
-See [automation operations](docs/automation-operations.md) for the daily user
+See [automation operations](docs/automation-operations.md) for the weekly user
 service, manual triggers, qualification gates, recovery and report-only repair
 admission. The approved contract is [automated release design](docs/automated-release-design.md).

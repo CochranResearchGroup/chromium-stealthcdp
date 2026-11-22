@@ -8,6 +8,8 @@ import shutil
 import subprocess
 import sys
 
+from automation_profiles import BUILD_PROFILES
+
 REPO = Path(__file__).resolve().parents[1]
 
 def run(*args):
@@ -17,6 +19,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--depot-tools', required=True, type=Path)
     parser.add_argument('--enable', action='store_true', help='Enable schedule only after baseline adoption')
+    parser.add_argument('--build-profile', choices=BUILD_PROFILES,
+                        help='Select a resource budget (default: conservative for new or legacy configuration)')
     args = parser.parse_args()
     if run('git', '-C', REPO, 'status', '--porcelain'):
         raise SystemExit('Commit all controller changes before installing an immutable generation')
@@ -36,8 +40,10 @@ def main():
     config = home / '.config/chromium-stealthcdp/automation.json'
     config.parent.mkdir(parents=True, exist_ok=True)
     previous_config = json.loads(config.read_text()) if config.exists() else {}
+    profile_name = args.build_profile or previous_config.get('build_profile', 'conservative')
+    profile = BUILD_PROFILES[profile_name]
     config.write_text(json.dumps({**previous_config, 'schema': 'stealthcdp.automation-config.v1', 'source_repo': str(generation),
-                                 'state_dir': str(state), 'depot_tools': str(args.depot_tools.resolve(strict=True)),
+                                 'build_profile': profile_name, 'state_dir': str(state), 'depot_tools': str(args.depot_tools.resolve(strict=True)),
                                  'agent_browser': str(home / '.local/bin/agent-browser')}, indent=2) + '\n')
     config.chmod(0o600)
     current = root / 'current'
@@ -66,20 +72,20 @@ WorkingDirectory=%h/.local/state/chromium-stealthcdp/automation
 UMask=0077
 Nice=10
 IOSchedulingClass=idle
-CPUQuota=800%
-MemoryMax=32G
+CPUQuota={100 * profile.jobs}%
+MemoryMax={profile.memory_gib}G
 MemorySwapMax=0
-TimeoutStartSec=12h
+TimeoutStartSec={profile.hours}h
 TimeoutStopSec=30s
 KillMode=control-group
 Restart=no
 '''
     (units / 'chromium-stealthcdp-update.service').write_text(service)
     (units / 'chromium-stealthcdp-update.timer').write_text('''[Unit]
-Description=Daily Chromium StealthCDP Stable check
+Description=Weekly Chromium StealthCDP Stable check
 
 [Timer]
-OnCalendar=*-*-* 03:00:00 America/Chicago
+OnCalendar=Sun *-*-* 03:00:00 America/Chicago
 Persistent=true
 Unit=chromium-stealthcdp-update.service
 
@@ -111,7 +117,7 @@ raise SystemExit('Usage: chromium-stealthcdp-update [run|status|logs]')
         if not baseline.exists() or not json.loads(baseline.read_text()).get('acceptance', {}).get('success'):
             raise SystemExit('Adopt and accept published installed baseline before enabling timer')
         run('systemctl', '--user', 'enable', '--now', 'chromium-stealthcdp-update.timer')
-    print(json.dumps({'generation': str(generation), 'config': str(config), 'state': str(state), 'timer_enabled': args.enable}, indent=2))
+    print(json.dumps({'generation': str(generation), 'config': str(config), 'state': str(state), 'build_profile': profile_name, 'timer_enabled': args.enable}, indent=2))
 
 if __name__ == '__main__':
     main()

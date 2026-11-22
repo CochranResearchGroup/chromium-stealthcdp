@@ -6,13 +6,18 @@ checkouts, stage journals, private logs and notifications live under
 `~/.local/state/chromium-stealthcdp/automation/`. GitHub authentication uses the
 existing `gh` login; credentials are never copied into this repository.
 
-## Daily operation
+## Weekly operation
 
-The user timer `chromium-stealthcdp-update.timer` checks at 03:00 America/Chicago
-and catches up after downtime. The service limits compilation to eight jobs,
-CPU to eight equivalents, memory to 32 GiB without swap and elapsed time to
-12 hours. It runs with low CPU/I/O priority. Builds defer if available memory
-is below 32 GiB or free disk below 200 GiB. An unchanged Stable version, approved queue and build recipe return `unchanged`
+The user timer `chromium-stealthcdp-update.timer` checks on Sundays at 03:00
+America/Chicago and catches up after downtime. The default conservative
+profile uses two parallel compilation and dependency-sync jobs, two CPU
+equivalents, 16 GiB of memory without swap, and a 36-hour service timeout.
+The standard profile uses eight jobs, eight CPU equivalents, 32 GiB, and
+12 hours. Both run at low CPU and I/O priority and defer if available
+memory is below their profile's ceiling or free disk is below 200 GiB.
+Select a profile during controller installation with
+`--build-profile conservative` or `--build-profile standard`.
+An unchanged Stable version, approved queue and build recipe return `unchanged`
 without building or publishing. Legacy/no-recipe receipts cannot suppress codec
 qualification or resume as current artifacts.
 
@@ -26,7 +31,7 @@ systemctl --user list-timers chromium-stealthcdp-update.timer
 Only one controller holds the lock. Concurrent direct invocations write a
 pending marker; the controller coalesces to the newest official target after
 the pinned run. Starting an already active systemd service leaves that pinned
-run alone. Each subsequent daily/manual check discovers the newest target.
+run alone. Each subsequent scheduled or manual check discovers the newest target.
 
 ## Release gates and recovery
 
@@ -118,7 +123,7 @@ identity binding. A delivery receipt must include Slack provider acceptance,
 channel and message timestamp; this is not proof that the recipient read it.
 
 Successful upgrades, failures, restored activations, resource deferrals and
-waiting/stopped outcomes produce curated notices. Daily `unchanged` checks are
+waiting/stopped outcomes produce curated notices. Weekly `unchanged` checks are
 quiet. Systemd `ExecStopPost` covers service timeout/abnormal termination even
 when the controller cannot reach its normal failure handler. Notification
 failure does not roll back or fail a qualified browser update.

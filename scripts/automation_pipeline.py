@@ -256,7 +256,7 @@ class CandidatePipeline:
         if gclient.exists() and gclient.read_text() != config:
             raise PipelineError('Managed gclient configuration drift')
         gclient.write_text(config)
-        self.fetch(context, ['gclient', 'sync', '--nohooks', '--revision', f'src@{actual}', '-j', '8'], cwd=checkout)
+        self.fetch(context, ['gclient', 'sync', '--nohooks', '--revision', f'src@{actual}', '-j', str(self.config.jobs)], cwd=checkout)
         self.command(context, ['gclient', 'runhooks'], cwd=checkout)
         self.fetch(context, ['python3', 'tools/update_pgo_profiles.py', '--target=linux', 'update',
                                '--gs-url-base=chromium-optimization-profiles/pgo_profiles'], cwd=src)

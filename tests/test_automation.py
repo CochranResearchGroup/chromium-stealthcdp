@@ -47,6 +47,18 @@ class ControllerTests(unittest.TestCase):
         self.assertIn('build_recipe_sha256',result['target'])
         controller.github.publish.assert_not_called()
 
+    def test_conservative_admission_accepts_16_gib(self):
+        from collections import namedtuple
+
+        meminfo = self.root / 'meminfo'
+        meminfo.write_text('MemAvailable: 16777216 kB\n')
+        disk = namedtuple('Disk', 'free')(200 * 1024**3)
+        with patch.object(m.shutil, 'disk_usage', return_value=disk):
+            self.assertTrue(m.headroom(self.root, meminfo, memory_gib=16)['ready'])
+            self.assertFalse(m.headroom(self.root, meminfo, memory_gib=32)['ready'])
+            meminfo.write_text('MemAvailable: 16777215 kB\n')
+            self.assertFalse(m.headroom(self.root, meminfo, memory_gib=16)['ready'])
+
     def test_unchanged_never_builds_or_publishes(self):
         controller = self.controller()
         m.atomic_json(controller.root / 'baseline.json', {'version': self.target['version'], 'patch_queue_sha256': m.patch_digest(self.root/'source'), 'build_recipe_sha256':build_recipe_sha256()})
@@ -120,7 +132,8 @@ class ControllerTests(unittest.TestCase):
         factory = Mock()
         factory.return_value.run.return_value = context
         deploy = Mock(return_value={'status': 'committed'})
-        controller = m.Controller(self.config, github=gh, discover_fn=lambda: dict(self.target),
+        controller = m.Controller({**self.config, 'build_profile': 'conservative'}, github=gh,
+                                  discover_fn=lambda: dict(self.target),
                                   pipeline_factory=factory, deploy_fn=deploy)
         calls = []
         def cleanup():
@@ -136,6 +149,9 @@ class ControllerTests(unittest.TestCase):
             result = controller.run()
         self.assertEqual(result['state'], 'complete')
         self.assertEqual(len(calls), 2)
+        self.assertEqual(result['build_profile'], 'conservative')
+        self.assertEqual(factory.call_args.args[0].jobs, 2)
+        self.assertEqual(factory.call_args.args[0].command_timeout, 36 * 3600)
         self.assertFalse((controller.root/'deployment-stopped.json').exists())
         gh.notify.assert_not_called()
         deploy.assert_called_once()
