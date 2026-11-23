@@ -19,8 +19,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--depot-tools', required=True, type=Path)
     parser.add_argument('--enable', action='store_true', help='Enable schedule only after baseline adoption')
-    parser.add_argument('--build-profile', choices=BUILD_PROFILES,
-                        help='Select a resource budget (default: conservative for new or legacy configuration)')
+    parser.add_argument('--build-profile', choices=('auto', *BUILD_PROFILES),
+                        help='Select a resource budget (default: auto for new or legacy configuration)')
     args = parser.parse_args()
     if run('git', '-C', REPO, 'status', '--porcelain'):
         raise SystemExit('Commit all controller changes before installing an immutable generation')
@@ -40,8 +40,9 @@ def main():
     config = home / '.config/chromium-stealthcdp/automation.json'
     config.parent.mkdir(parents=True, exist_ok=True)
     previous_config = json.loads(config.read_text()) if config.exists() else {}
-    profile_name = args.build_profile or previous_config.get('build_profile', 'conservative')
-    profile = BUILD_PROFILES[profile_name]
+    profile_name = args.build_profile or previous_config.get('build_profile', 'auto')
+    if profile_name not in ('auto', *BUILD_PROFILES):
+        parser.error(f'unknown build profile: {profile_name}')
     config.write_text(json.dumps({**previous_config, 'schema': 'stealthcdp.automation-config.v1', 'source_repo': str(generation),
                                  'build_profile': profile_name, 'state_dir': str(state), 'depot_tools': str(args.depot_tools.resolve(strict=True)),
                                  'agent_browser': str(home / '.local/bin/agent-browser')}, indent=2) + '\n')
@@ -57,14 +58,25 @@ def main():
     units = home / '.config/systemd/user'
     units.mkdir(parents=True, exist_ok=True)
     path = ':'.join([str(home / '.local/bin'), str(args.depot_tools.resolve()), str(Path(ffmpeg).parent), '/usr/local/bin', '/usr/bin', '/bin'])
-    service = f'''[Unit]
+    (units / 'chromium-stealthcdp-update.service').write_text(f'''[Unit]
+Description=Select the Chromium StealthCDP build profile
+PropagatesStopTo=chromium-stealthcdp-build@conservative.service chromium-stealthcdp-build@standard.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 {quote(current / 'scripts/automation_trigger.py')} --config {quote(config)}
+Environment=PYTHONDONTWRITEBYTECODE=1
+TimeoutStartSec={max(profile.hours for profile in BUILD_PROFILES.values()) + 1}h
+''')
+    for name, profile in BUILD_PROFILES.items():
+        service = f'''[Unit]
 Description=Qualify, publish and deploy Chromium StealthCDP Linux Stable
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 {quote(current / 'scripts/automation.py')} --config {quote(config)} run
+ExecStart=/usr/bin/python3 {quote(current / 'scripts/automation.py')} --config {quote(config)} run --build-profile {name}
 Environment="PATH={path}"
 ExecStopPost=-/usr/bin/python3 {quote(current / 'scripts/automation_notify.py')} --config {quote(config)} service-result
 Environment=PYTHONDONTWRITEBYTECODE=1
@@ -80,7 +92,7 @@ TimeoutStopSec=30s
 KillMode=control-group
 Restart=no
 '''
-    (units / 'chromium-stealthcdp-update.service').write_text(service)
+        (units / f'chromium-stealthcdp-build@{name}.service').write_text(service)
     (units / 'chromium-stealthcdp-update.timer').write_text('''[Unit]
 Description=Weekly Chromium StealthCDP Stable check
 
@@ -104,13 +116,14 @@ home=Path.home()
 if len(sys.argv)==1 or sys.argv[1:] == ['run']:
     sys.exit(subprocess.call(['systemctl','--user','start','--no-block','chromium-stealthcdp-update.service']))
 if sys.argv[1:] == ['logs']:
-    os.execvp('journalctl',['journalctl','--user','-u','chromium-stealthcdp-update.service','-n','80','--no-pager'])
+    os.execvp('journalctl',['journalctl','--user','-u','chromium-stealthcdp-update.service','-u','chromium-stealthcdp-build@*.service','-n','80','--no-pager'])
 if sys.argv[1:] == ['status']:
     os.execvp('python3',['python3',str(home/'.local/lib/chromium-stealthcdp-automation/current/scripts/automation.py'),'--config',str(home/'.config/chromium-stealthcdp/automation.json'),'status'])
 raise SystemExit('Usage: chromium-stealthcdp-update [run|status|logs]')
 ''')
     launcher.chmod(0o755)
-    run('systemd-analyze', '--user', 'verify', units / 'chromium-stealthcdp-update.service', units / 'chromium-stealthcdp-update.timer')
+    run('systemd-analyze', '--user', 'verify', units / 'chromium-stealthcdp-update.service', units / 'chromium-stealthcdp-update.timer',
+        *(units / f'chromium-stealthcdp-build@{name}.service' for name in BUILD_PROFILES))
     run('systemctl', '--user', 'daemon-reload')
     if args.enable:
         baseline = state / 'baseline.json'

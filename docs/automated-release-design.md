@@ -63,12 +63,18 @@ runtime output.
 
 ## Workstation budget and retention
 
+At each scheduled or manual trigger, automatic mode chooses the fastest profile
+whose memory floor fits current available memory. Below 16 GiB the conservative
+worker can still recover or resume qualified work. New preparation defers at
+its admission check while memory is below the floor. The selected systemd
+worker enforces that profile for the whole run.
+
 | Control | Accepted limit |
 | --- | --- |
-| Parallel compilation and dependency sync | Two jobs by default, eight in the standard profile |
-| CPU | Two CPU equivalents by default, eight in the standard profile. Low priority in both |
-| Memory | 16 GiB ceiling by default, 32 GiB in the standard profile. No swap in either |
-| Run duration | 36 hours by default, 12 hours in the standard profile |
+| Parallel compilation and dependency sync | Two conservative, eight standard |
+| CPU | Two conservative, eight standard. Low priority in both |
+| Memory | 16 GiB conservative, 32 GiB standard. No swap in either |
+| Run duration | 36 hours conservative, 12 hours standard |
 | Free-disk reserve | 200 GiB |
 | I/O | Low priority |
 | Local good installed releases | Active, previous and one additional release |

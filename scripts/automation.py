@@ -15,7 +15,7 @@ import time
 import urllib.error
 import urllib.request
 
-from automation_profiles import BUILD_PROFILES
+from automation_profiles import BUILD_PROFILES, available_memory_kib, select_profile
 
 REPOSITORY = 'CochranResearchGroup/chromium-stealthcdp'
 STABLE_URL = 'https://chromiumdash.appspot.com/fetch_releases?channel=Stable&platform=Linux&num=1'
@@ -106,12 +106,11 @@ def discover(fetch=None):
 
 
 def headroom(path, meminfo='/proc/meminfo', *, memory_gib):
-    memory = dict((k.rstrip(':'), int(v)) for k, v, *_ in
-                  (line.split() for line in Path(meminfo).read_text().splitlines()))
+    available = available_memory_kib(Path(meminfo))
     free = shutil.disk_usage(path).free
     # Leave workstation memory outside the enforced service ceiling.
-    return {'ready': free >= 200 * 1024**3 and memory['MemAvailable'] >= memory_gib * 1024**2,
-            'free_disk_bytes': free, 'available_memory_bytes': memory['MemAvailable'] * 1024}
+    return {'ready': free >= 200 * 1024**3 and available >= memory_gib * 1024**2,
+            'free_disk_bytes': free, 'available_memory_bytes': available * 1024}
 
 
 class GitHub:
@@ -273,10 +272,9 @@ class GitHub:
 
 
 class Controller:
-    def __init__(self, config, github=None, discover_fn=discover, pipeline_factory=None, deploy_fn=None):
+    def __init__(self, config, github=None, discover_fn=discover, pipeline_factory=None, deploy_fn=None, build_profile=None):
         self.config = config
-        self.build_profile_name = config.get('build_profile', 'standard')
-        self.build_profile = BUILD_PROFILES[self.build_profile_name]
+        self.build_profile_name = build_profile or config.get('build_profile', 'standard')
         self.root = Path(config['state_dir'])
         self.root.mkdir(parents=True, exist_ok=True, mode=0o700)
         self.github = github or GitHub()
@@ -387,8 +385,12 @@ class Controller:
                 self.save(run)
             try:
                 if run['stage'] == 'prepare':
-                    budget = headroom(self.root, memory_gib=self.build_profile.memory_gib)
-                    run['build_profile'] = self.build_profile_name
+                    profile_name = self.build_profile_name
+                    if profile_name == 'auto':
+                        profile_name = select_profile(profile_name, available_memory_kib(Path('/proc/meminfo')))
+                    profile = BUILD_PROFILES[profile_name]
+                    budget = headroom(self.root, memory_gib=profile.memory_gib)
+                    run['build_profile'] = profile_name
                     run['headroom'] = budget
                     if not budget['ready']:
                         run['state'] = 'deferred'
@@ -400,8 +402,8 @@ class Controller:
                     pipeline = factory(PipelineConfig(repo=repo, managed_root=self.root / 'builds',
                                                        depot_tools=Path(self.config['depot_tools']),
                                                        agent_browser=self.config.get('agent_browser', 'agent-browser'),
-                                                       jobs=self.build_profile.jobs,
-                                                       command_timeout=self.build_profile.hours * 3600))
+                                                       jobs=profile.jobs,
+                                                       command_timeout=profile.hours * 3600))
                     run['context'] = pipeline.run(run['target'])
                     run['context']['patchset_repo'] = run['context']['patchset']
                     run['stage'] = 'integrate'
@@ -510,6 +512,7 @@ def main():
     sub = parser.add_subparsers(dest='action', required=True)
     run = sub.add_parser('run')
     run.add_argument('--requeue', action='store_true')
+    run.add_argument('--build-profile', choices=BUILD_PROFILES)
     sub.add_parser('status')
     sub.add_parser('cleanup')
     baseline = sub.add_parser('adopt')
@@ -533,7 +536,7 @@ def main():
             atomic_json(Path(config['state_dir']) / 'invocation.json',
                         {'started_at': time.time(), 'id': os.environ.get('INVOCATION_ID')})
             announce(config, {'state': 'unchanged'})
-            controller = Controller(config)
+            controller = Controller(config, build_profile=args.build_profile)
             result = controller.run(args.requeue)
             announce(config, result)
             if (controller.root / 'pending.json').exists() and result.get('state') in TERMINAL:
