@@ -9,14 +9,20 @@ existing `gh` login; credentials are never copied into this repository.
 ## Weekly operation
 
 The user timer `chromium-stealthcdp-update.timer` checks on Sundays at 03:00
-America/Chicago and catches up after downtime. The default conservative
-profile uses two parallel compilation and dependency-sync jobs, two CPU
-equivalents, 16 GiB of memory without swap, and a 36-hour service timeout.
-The standard profile uses eight jobs, eight CPU equivalents, 32 GiB, and
-12 hours. Both run at low CPU and I/O priority and defer if available
-memory is below their profile's ceiling or free disk is below 200 GiB.
-Select a profile during controller installation with
-`--build-profile conservative` or `--build-profile standard`.
+America/Chicago and catches up after downtime. The default `auto` setting
+selects the fastest profile that fits available memory when the timer or manual
+launcher fires. With at least 32 GiB available it starts the standard service
+with eight jobs, eight CPU equivalents, and a 12-hour timeout. With at least
+16 GiB it can build in the conservative service with two jobs, two CPU
+equivalents, and a 36-hour timeout. Below 16 GiB the conservative service can
+still run recovery and resume qualified work. Source preparation defers while
+available memory remains below its floor.
+
+The selected service pins its concurrency, memory ceiling and timeout for the
+run. Both services use low CPU and I/O priority and disable swap. Before building,
+the controller rechecks the selected memory floor and the 200 GiB disk reserve.
+The installer accepts `--build-profile auto`, `--build-profile conservative` or
+`--build-profile standard`. An explicit selection persists across upgrades.
 An unchanged Stable version, approved queue and build recipe return `unchanged`
 without building or publishing. Legacy/no-recipe receipts cannot suppress codec
 qualification or resume as current artifacts.
@@ -59,7 +65,9 @@ cause and confirming the restored activation is usable.
 
 Failed target identities do not repeat automatically. After fixing the cause,
 an explicit operator reconciliation may run the controller with `run --requeue`
-inside the same service resource limits. Do not restart an identical failed
+inside the selected profile’s service resource limits. Pass the matching
+`--build-profile standard` or `--build-profile conservative` when invoking the
+controller in that bounded service. Do not restart an identical failed
 build blindly. A new target/approved queue has its own identity. Stage receipts
 remain outside Git; absence of a terminal receipt does not prove remote effects
 were absent.
