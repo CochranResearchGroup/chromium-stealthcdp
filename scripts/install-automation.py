@@ -59,7 +59,7 @@ def main():
     units.mkdir(parents=True, exist_ok=True)
     path = ':'.join([str(home / '.local/bin'), str(args.depot_tools.resolve()), str(Path(ffmpeg).parent), '/usr/local/bin', '/usr/bin', '/bin'])
     (units / 'chromium-stealthcdp-update.service').write_text(f'''[Unit]
-Description=Select the Chromium StealthCDP build profile
+Description=Select the chromiumQ build profile
 PropagatesStopTo=chromium-stealthcdp-build@conservative.service chromium-stealthcdp-build@standard.service
 
 [Service]
@@ -70,7 +70,7 @@ TimeoutStartSec={max(profile.hours for profile in BUILD_PROFILES.values()) + 1}h
 ''')
     for name, profile in BUILD_PROFILES.items():
         service = f'''[Unit]
-Description=Qualify, publish and deploy Chromium StealthCDP Linux Stable
+Description=Qualify, publish and deploy chromiumQ Linux Stable
 After=network-online.target
 Wants=network-online.target
 
@@ -94,7 +94,7 @@ Restart=no
 '''
         (units / f'chromium-stealthcdp-build@{name}.service').write_text(service)
     (units / 'chromium-stealthcdp-update.timer').write_text('''[Unit]
-Description=Weekly Chromium StealthCDP Stable check
+Description=Weekly chromiumQ Stable check
 
 [Timer]
 OnCalendar=Sun *-*-* 03:00:00 America/Chicago

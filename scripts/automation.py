@@ -244,7 +244,7 @@ class GitHub:
                              'Official non-testing Chromium build; retained Blink regressions, active CDP '
                              'webdriver=false and isolated Agent Browser acceptance passed.\n')
             self.gh('release', 'create', tag, '--repo', self.repo, '--verify-tag', '--draft',
-                    '--title', f'Chromium StealthCDP {ctx["version"]}', '--notes-file', str(notes))
+                    '--title', f'chromiumQ {ctx["version"]}', '--notes-file', str(notes))
             found = next(r for r in self.api('releases?per_page=100') if r['tag_name'] == tag)
         existing = {a['name']: a for a in found['assets']}
         for asset in assets:

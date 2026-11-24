@@ -17,7 +17,7 @@ QUIET = {'unchanged', 'coalesced', 'active'}
 def message(outcome):
     state = outcome.get('state', 'failed')
     version = outcome.get('target', {}).get('version', '')
-    title = f'Chromium StealthCDP {version}'.strip()
+    title = f'chromiumQ {version}'.strip()
     labels = {'complete': 'upgrade succeeded', 'failed': 'upgrade failed',
               'rolled_back': 'upgrade failed; previous activation restored',
               'deferred': 'upgrade deferred: insufficient workstation resources',
