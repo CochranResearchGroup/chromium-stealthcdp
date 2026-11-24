@@ -16,7 +16,7 @@ artifact="$repo_root/../artifacts/chromium-stealthcdp/current"
 output_dir="$repo_root/../artifacts/chromium-stealthcdp/packages"
 revision="1"
 package_name="chromium-stealthcdp"
-maintainer="Chromium StealthCDP Maintainers <no-reply@example.com>"
+maintainer="chromiumQ Maintainers <no-reply@example.com>"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -176,7 +176,7 @@ cat > "$stage/usr/share/applications/chromium-stealthcdp.desktop" <<'EOF'
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Chromium StealthCDP
+Name=chromiumQ
 Comment=Stable Chromium with private CDP behavior
 Exec=/usr/bin/chromium-stealthcdp %U
 TryExec=/usr/bin/chromium-stealthcdp
@@ -205,7 +205,7 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: chromium-stealthcdp
 
 Files: *
-Copyright: 2026 Chromium StealthCDP local package maintainers
+Copyright: 2026 chromiumQ local package maintainers
            and Chromium authors and other upstream rightsholders
 License: Chromium
  This package is a local redistribution of a Chromium build with the

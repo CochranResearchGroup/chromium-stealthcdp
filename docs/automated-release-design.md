@@ -1,4 +1,4 @@
-# Chromium StealthCDP automated releases
+# chromiumQ automated releases
 
 Status: approved by the operator on 2026-10-22; implementation in Plan 0006.
 
@@ -7,7 +7,7 @@ describes the approved automation contract; Plan 0006 records delivery evidence.
 
 ## Outcome
 
-Keep the approved Chromium StealthCDP build current with Linux x86_64 production
+Keep the approved chromiumQ build current with Linux x86_64 production
 Stable, automatically qualify and publish routine updates, and deploy them to
 this user's workstation and Agent Browser. The browser remains available by
 the terminal command, desktop browser choice and Agent Browser's

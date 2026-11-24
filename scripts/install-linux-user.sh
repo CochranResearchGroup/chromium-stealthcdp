@@ -91,7 +91,7 @@ desktop.parent.mkdir(parents=True, exist_ok=True)
 content = f'''[Desktop Entry]
 Version=1.0
 Type=Application
-Name=Chromium StealthCDP
+Name=chromiumQ
 Comment=Stable Chromium with private CDP behavior
 Exec="{launcher}" %U
 TryExec={launcher}

@@ -1,4 +1,4 @@
-# Chromium StealthCDP releases
+# chromiumQ releases
 
 The language used to distinguish an upstream browser update, a validated
 downstream release, and the browser a person or agent actually runs.

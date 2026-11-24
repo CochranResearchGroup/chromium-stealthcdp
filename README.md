@@ -1,6 +1,8 @@
-# chromium-stealthcdp
+# chromiumQ
 
-Patch queue for Chromium customizations related to stealth CDP behavior.
+chromiumQ is the downstream Chromium build maintained by this patch queue.
+Existing installations use the `chromium-stealthcdp` command, package and
+service identifiers.
 
 ## Layout
 
@@ -105,7 +107,7 @@ scripts/install-linux-user.sh --artifact ../artifacts/chromium-stealthcdp/curren
 
 This installs an immutable version under
 `${XDG_DATA_HOME:-~/.local/share}/chromium-stealthcdp`, exposes
-`~/.local/bin/chromium-stealthcdp`, and registers **Chromium StealthCDP** in the
+`~/.local/bin/chromium-stealthcdp`, and registers **chromiumQ** in the
 desktop browser chooser. It preserves existing browser profiles and does not
 change the default browser.
 
