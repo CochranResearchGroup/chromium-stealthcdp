@@ -177,7 +177,7 @@ cat > "$stage/usr/share/applications/chromium-stealthcdp.desktop" <<'EOF'
 Version=1.0
 Type=Application
 Name=chromiumQ
-Comment=Stable Chromium with private CDP behavior
+Comment=Chromium-based web browser
 Exec=/usr/bin/chromium-stealthcdp %U
 TryExec=/usr/bin/chromium-stealthcdp
 Icon=web-browser
@@ -262,7 +262,7 @@ Architecture: amd64
 Installed-Size: $installed_size
 Maintainer: $maintainer
 Depends: libc6, libasound2t64 | libasound2, libatk-bridge2.0-0t64 | libatk-bridge2.0-0, libatk1.0-0t64 | libatk1.0-0, libatspi2.0-0, libcairo2, libcups2t64 | libcups2, libdbus-1-3, libdrm2, libexpat1, libgbm1, libgcc-s1, libglib2.0-0t64 | libglib2.0-0, libnspr4, libnss3, libpango-1.0-0, libudev1, libx11-6, libxcb1, libxcomposite1, libxdamage1, libxext6, libxfixes3, libxkbcommon0, libxrandr2
-Description: Side-by-side Chromium build for agent-browser stealth CDP
+Description: chromiumQ web browser
  Chromium build with the chromium-stealthcdp patch queue applied. It installs
  under /opt/chromium-stealthcdp and exposes /usr/bin/chromium-stealthcdp without
  replacing system Chromium or Google Chrome.

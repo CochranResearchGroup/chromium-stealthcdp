@@ -4,24 +4,8 @@ Date: 2026-11-09
 
 ## Decision
 
-Keep the Chromium patchset small. Most anti-anti-bot and site compatibility
-work belongs in agent-browser site policy, profile management, launch mode,
-streaming, and input behavior.
-
-Chromium patches should only cover browser-internal signals that agent-browser
-cannot fix from outside without creating new detectable inconsistencies.
-
-## Current Patch
-
-Keep the first patch:
-
-```text
-patches/0001-Make-navigator.webdriver-non-advertising.patch
-```
-
-It changes `Navigator::webdriver()` so external websites do not receive the
-explicit automation signal from headless, CDP pipe, `remote-debugging-port=0`,
-`enable-automation`, or CDP automation override paths.
+Keep the downstream patch queue small and reviewable. For the exact source
+changes and their replay order, consult the checked-in files under `patches/`.
 
 ## Upstream Compatibility Repairs
 
@@ -38,8 +22,8 @@ covered by downstream patch 0002. Chromium `157.0.8103.38` at pinned base
 `LineBreakerClearShapeResultOnOverflow`, a feature marked `stable`. Its new
 context broke replay of the old patch 0002.
 
-The repaired queue retains two patches: private webdriver behavior and the
-downstream unconditional stale-shape invariant with the existing seeded
+The repaired queue retains the existing first patch and the downstream
+unconditional stale-shape invariant with the existing seeded
 `BreakWordWithReusedShapeResult` regression and DCHECK consistency check.
 Patch 0002 replaces the upstream feature-guarded clear with unconditional
 clearing, preserving downstream behavior even with runtime feature overrides.

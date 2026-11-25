@@ -1,6 +1,6 @@
 # chromiumQ
 
-chromiumQ is the downstream Chromium build maintained by this patch queue.
+chromiumQ is a Chromium-based web browser. This repository maintains its downstream patches and build tooling.
 Existing installations use the `chromium-stealthcdp` command, package and
 service identifiers.
 

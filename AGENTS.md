@@ -35,7 +35,7 @@
 ## Repo-Specific Guidance
 
 - Operator requires chromiumQ exclusively. Do not build, install, or
-  substitute Chrome for Testing. Missing StealthCDP is an explicit failure,
+  substitute Chrome for Testing. Missing chromiumQ is an explicit failure,
   not permission to select another browser. Both `is_chrome_for_testing` and
   `is_chrome_for_testing_branded` must resolve to false before compilation.
 

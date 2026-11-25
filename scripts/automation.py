@@ -151,7 +151,7 @@ class GitHub:
             if matched[0]['state'] == 'CLOSED':
                 self.gh('issue', 'reopen', str(issue), '--repo', self.repo)
             return {'issue': issue, 'delivered': True}
-        url = self.gh('issue', 'create', '--repo', self.repo, '--title', f'StealthCDP update stopped: {identity}',
+        url = self.gh('issue', 'create', '--repo', self.repo, '--title', f'chromiumQ update stopped: {identity}',
                       '--body-file', str(bodyfile))
         return {'url': url, 'delivered': True}
 
@@ -240,9 +240,8 @@ class GitHub:
         found = next((r for r in releases if r['tag_name'] == tag), None)
         if not found:
             notes = repo.parent / 'release-notes.md'
-            notes.write_text(f'Production Linux Stable {ctx["version"]} with the approved StealthCDP patch queue.\n\n'
-                             'Official non-testing Chromium build; retained Blink regressions, active CDP '
-                             'webdriver=false and isolated Agent Browser acceptance passed.\n')
+            notes.write_text(f'chromiumQ for Linux, based on Chromium Stable {ctx["version"]}.\n\n'
+                             'Browser smoke tests, focused Blink regression tests and managed browser acceptance passed.\n')
             self.gh('release', 'create', tag, '--repo', self.repo, '--verify-tag', '--draft',
                     '--title', f'chromiumQ {ctx["version"]}', '--notes-file', str(notes))
             found = next(r for r in self.api('releases?per_page=100') if r['tag_name'] == tag)
