@@ -28,7 +28,9 @@ try{
  server=createServer((req,res)=>{const p=req.url?.split('?')[0];const names={'/sample.mp4':'video/mp4','/sample.webm':'video/webm','/sample.m4a':'audio/mp4'};res.setHeader('Cache-Control','no-store');if(names[p]){res.setHeader('Content-Type',names[p]);res.end(readFileSync(join(root,p.slice(1))))}else{res.setHeader('Content-Type','text/html');res.end('<!doctype html><title>Owned codec acceptance</title>')}});
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const url='http://127.0.0.1:'+server.address().port;
  profile=mkdtempSync(join(root,'profile-'));const fd=openSync(join(root,'browser.log'),'a',0o600);
- child=spawn(chrome,['--headless=new','--no-first-run','--no-default-browser-check','--disable-background-networking','--disable-gpu','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{detached:true,stdio:['ignore',fd,fd]});closeSync(fd);
+ // This disposable profile uses only local fixtures and has no credentials.
+ // Keep cookie-store initialization independent of the desktop keyring.
+ child=spawn(chrome,['--headless=new','--no-first-run','--password-store=basic','--no-default-browser-check','--disable-background-networking','--disable-gpu','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{detached:true,stdio:['ignore',fd,fd]});closeSync(fd);
  result.pid=child.pid;result.phase='launched';save();child.on('error',e=>{result.launchError=e.message;save()});
  await until(()=>existsSync(join(profile,'DevToolsActivePort')),'CDP port');assert(child.exitCode===null);
  const port=readFileSync(join(profile,'DevToolsActivePort'),'utf8').split('\n')[0];assert(/^\d+$/.test(port));
