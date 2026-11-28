@@ -12,9 +12,30 @@ branch in the Agent Browser repository. Its dirty root is outside the write scop
 | Ticket | Blockers | Owner | State | Owned scope |
 | --- | --- | --- | --- | --- |
 | 0024 | None | agent_browser_0024 | running | Agent Browser worktree, identifiers, consumers and contracts |
-| 0025 | None | Coordinator | running | chromiumQ Linux/Windows installer, package and updater identities |
+| 0025 | None | Coordinator | integrated | chromiumQ Linux/Windows installer, package and updater identities |
 | 0026 | 0024, 0025 | Coordinator | pending | Merged generation, managed activation and rollback verification |
 | 0027 | 0026 and verified census | Coordinator | pending | Legacy alias and active entry point retirement |
 
 Validation and integration results belong here. The three-hour goal allocation
 starts at epoch 1795837107. Stop and checkpoint before epoch 1795847907.
+
+
+## Checkpoint
+
+- 0024 worker `agent_browser_0024` owns `feat/chromiumq-build-identity` in
+  `/home/ecochran76/workspace.local/.worktrees/agent-browser/chromiumq-0024`,
+  based on Agent Browser origin/main `9a9845978f57cd84de48ff675de2e00abe99e83c`.
+  The worker reported a confirmed red/green identity codec and active CLI checks.
+- 0025 is committed on the integration branch at `670ea61`. The promoted
+  artifact schema is `chromiumQ.artifact.v1`. Readers accept the prior schema,
+  and the canonical package, install roots, GitHub repository, and updater
+  units use the chromiumQ identity. Existing updater state and controller lock
+  remain at their configured location during the compatibility window.
+- Focused Linux/Windows packaging, provision, and rollback fixtures passed
+  28 checks before the final process-probe namespace and promotion wiring edits.
+  The full suite for the final change is running alongside independent checks.
+  Its log is `/tmp/chromiumq-0025-final-suite.log`.
+- Live activation remains gated on verified 0024 and 0025. The automated
+  installer has a 200 GiB free-disk reserve plus the candidate copy requirement.
+  A readback during 0025 showed about 166 GiB available. Do not bypass the
+  reserve or clean retained state merely to advance the ticket.
