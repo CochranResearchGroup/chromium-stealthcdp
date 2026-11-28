@@ -1,7 +1,7 @@
-From 39f8185e4708dc58d5d008b926eb1d815a753252 Mon Sep 17 00:00:00 2001
+From bcca4f18687839cea0562446a8b17bfb894fbd0f Mon Sep 17 00:00:00 2001
 From: Chromium StealthCDP Repair <automation@users.noreply.github.com>
 Date: Mon, 9 Nov 2026 05:16:55 -0600
-Subject: [PATCH 2/2] Fix stale shape result during line overflow
+Subject: [PATCH 2/3] Fix stale shape result during line overflow
 
 Reconcile Chromium 157 upstream feature-guarded clearing with the downstream unconditional invariant. Retain the seeded reused-shape regression and consistency check. The old patch failed replay because upstream inserted the feature guard in its context.
 ---
@@ -11,7 +11,7 @@ Reconcile Chromium 157 upstream feature-guarded clearing with the downstream unc
  3 files changed, 65 insertions(+), 5 deletions(-)
 
 diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker.cc b/third_party/blink/renderer/core/layout/inline/line_breaker.cc
-index 3ded12e7d8c54..3761a2982ce30 100644
+index 6c8e41e99643f..48384332353f0 100644
 --- a/third_party/blink/renderer/core/layout/inline/line_breaker.cc
 +++ b/third_party/blink/renderer/core/layout/inline/line_breaker.cc
 @@ -1704,14 +1704,18 @@ LineBreaker::BreakResult LineBreaker::BreakText(
@@ -67,7 +67,7 @@ index 3a715a17f106f..beb47359a389f 100644
    bool force_non_empty_if_last_line_ = false;
  
 diff --git a/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc b/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
-index c15c1dc258d7b..6498e79ff48a2 100644
+index 5c5e94ef4890b..63a61937d3461 100644
 --- a/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
 +++ b/third_party/blink/renderer/core/layout/inline/line_breaker_test.cc
 @@ -141,6 +141,16 @@ class LineBreakerTest : public RenderingTest {

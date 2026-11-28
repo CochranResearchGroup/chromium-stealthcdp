@@ -1,4 +1,4 @@
-From d689a50fd1502a7d9f6ccd432bd524e516a4c2e1 Mon Sep 17 00:00:00 2001
+From e60daeec1426c7a26d860b8344b57a448d762ab9 Mon Sep 17 00:00:00 2001
 From: Eric W Cochran <ecochran76@ewc2.cbe.iastate.edu>
 Date: Sat, 14 Nov 2026 11:56:30 -0600
 Subject: [PATCH 3/3] Fix integrated license metadata without weakening strict
@@ -280,7 +280,7 @@ index 0000000000000..64668a5635aaa
 +if __name__ == '__main__':
 +    unittest.main()
 diff --git a/tools/licenses/licenses.py b/tools/licenses/licenses.py
-index 7756e7cc514dc..82851cb407430 100755
+index 2abab0dc55436..2f45e63f17ecb 100755
 --- a/tools/licenses/licenses.py
 +++ b/tools/licenses/licenses.py
 @@ -45,6 +45,24 @@ METADATA_FILE_NAMES = frozenset(
@@ -308,7 +308,7 @@ index 7756e7cc514dc..82851cb407430 100755
  _DEFAULT_FILE_TEMPLATE_FILE = os.path.join(
    _REPOSITORY_ROOT,
    'components',
-@@ -679,37 +697,48 @@ def ParseDir(
+@@ -678,37 +696,48 @@ def ParseDir(
    valid_metadata = []
    directory_metadata = []
  
