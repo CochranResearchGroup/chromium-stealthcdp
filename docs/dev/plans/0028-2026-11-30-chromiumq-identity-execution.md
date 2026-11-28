@@ -54,3 +54,14 @@ starts at epoch 1795837107. Stop and checkpoint before epoch 1795847907.
 - Stable Agent Browser runtime host reported inactive with exit status 9.
   Preserve the active development lanes. Re-read stable runtime state and
   ownership before ticket 0026. The legacy updater timer is still enabled.
+
+### Publication checkpoint
+
+- Draft PR 28 carries the validated installer and updater changes into
+  chromiumQ review. Keep it separate from live activation until Agent Browser
+  0024 is integrated and the stable runtime ownership is re-verified.
+  https://github.com/CochranResearchGroup/chromiumQ/pull/28
+- Agent Browser 0024 is now on `platform/chromiumq-build-identity` in its
+  existing isolated worktree. The worker is still active.
+- The full suite passed 124 tests at `f3acfe0`. No broad code review or
+  remediation TDD pass has been run.
