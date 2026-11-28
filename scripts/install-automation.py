@@ -69,8 +69,8 @@ def main():
                      else home / '.local/state/chromiumQ/automation')
     # Preserve run paths, pinned queues and the shared controller lock on upgrade.
     state = Path(previous_config.get('state_dir', default_state))
-    if not state.is_absolute():
-        parser.error('state_dir must be absolute')
+    if not state.is_absolute() or '\n' in str(state) or '\r' in str(state) or str(state).endswith((' ', '\t', '\\')):
+        parser.error('state_dir must be an absolute path representable in a systemd unit')
     state.mkdir(parents=True, exist_ok=True, mode=0o700)
     config.parent.mkdir(parents=True, exist_ok=True)
     profile_name = args.build_profile or previous_config.get('build_profile', 'auto')
@@ -113,7 +113,7 @@ ExecStart=/usr/bin/python3 {quote(current / 'scripts/automation.py')} --config {
 Environment="PATH={path}"
 ExecStopPost=-/usr/bin/python3 {quote(current / 'scripts/automation_notify.py')} --config {quote(config)} service-result
 Environment=PYTHONDONTWRITEBYTECODE=1
-WorkingDirectory={quote(state)}
+WorkingDirectory={str(state).replace('%', '%%')}
 UMask=0077
 Nice=10
 IOSchedulingClass=idle

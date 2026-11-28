@@ -99,6 +99,8 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(new['state_dir'], str(state))
             self.assertEqual(new['build_profile'], 'conservative')
             self.assertEqual(new['approved_queue'], 'existing-pinned-queue')
+            unit = home / '.config/systemd/user/chromiumQ-build@conservative.service'
+            self.assertIn(f'WorkingDirectory={state}\n', unit.read_text())
 
 
     def test_updater_baseline_requires_a_published_committed_matching_acceptance(self):
