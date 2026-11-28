@@ -7,8 +7,8 @@ import stat
 import subprocess
 import time
 
-PROBE = Path('/usr/local/libexec/chromium-stealthcdp-process-probe')
-CONFIG = Path('/etc/chromium-stealthcdp/process-census.json')
+PROBE = Path('/usr/local/libexec/chromiumQ-process-probe')
+CONFIG = Path('/etc/chromiumQ/process-census.json')
 
 
 def _trusted(path):

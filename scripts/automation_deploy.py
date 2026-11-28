@@ -464,7 +464,7 @@ def recover_deployment(state_dir: Path, *, agent_browser='agent-browser'):
         rollback_home = Path(value['runtimeRefreshHome'])
         try:
             value['rollbackRuntimeRefresh'] = refresh_managed_runtime(
-                rollback_home / '.local/share/chromium-stealthcdp', home=rollback_home,
+                Path(value.get('runtimeRefreshRoot') or rollback_home / '.local/share/chromium-stealthcdp'), home=rollback_home,
                 agent_browser=agent_browser)
         except DeploymentError as exc:
             value.update(status='rollback_refresh_failed', rollbackRuntimeRefresh=exc.receipt,
@@ -489,14 +489,14 @@ def deploy(candidate: Path, state_dir: Path, repo_root: Path, *, home: Path | No
     if shutil.disk_usage(disk_parent).free < 200 * 1024**3 + required_copy:
         raise DeploymentError('Installation would consume the 200 GiB free-disk reserve')
     data = home / '.local/share'
-    root = data / 'chromium-stealthcdp'
+    root = data / 'chromiumQ'
     config_path = home / '.agent-browser/config.json'
     config = bind_config(json.loads(config_path.read_text()), root / 'current', manifest)
-    paths = [root / 'current', home / '.local/bin/chromium-stealthcdp',
-             data / 'applications/chromium-stealthcdp.desktop', data / 'applications/mimeinfo.cache', config_path]
+    paths = [root / 'current', home / '.local/bin/chromiumQ',
+             data / 'applications/chromiumQ.desktop', data / 'applications/mimeinfo.cache', config_path]
     journal = {'status': 'prepared', 'artifactName': manifest['artifactName'],
                'before': {str(path): _snapshot(path) for path in paths}, 'startedAt': time.time(),
-               'runtimeRefreshHome': str(home.resolve())}
+               'runtimeRefreshHome': str(home.resolve()), 'runtimeRefreshRoot': str(root)}
     journal_path = state_dir / 'deployment-transaction.json'
     atomic_json(journal_path, journal)
     try:

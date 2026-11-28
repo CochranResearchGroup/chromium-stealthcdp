@@ -18,7 +18,7 @@ def main():
     available = available_memory_kib(Path('/proc/meminfo'))
     profile = select_profile(mode, available)
     print(f'Build profile {profile} selected with {available} KiB available', flush=True)
-    return subprocess.call(['systemctl', '--user', 'start', f'chromium-stealthcdp-build@{profile}.service'])
+    return subprocess.call(['systemctl', '--user', 'start', f'chromiumQ-build@{profile}.service'])
 
 
 if __name__ == '__main__':

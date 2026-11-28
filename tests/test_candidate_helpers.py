@@ -39,11 +39,52 @@ class CandidateHelperTests(unittest.TestCase):
         self.assertEqual(result.returncode,0,result.stderr)
         package=next(output.glob('*.deb'))
         version=subprocess.check_output(['dpkg-deb','-f',str(package),'Version'],text=True).strip()
-        self.assertEqual(version,'157.0.8103.78+stealthcdp.cccccccccccc.build.aaaaaaaaaaaa-1')
+        self.assertEqual(version,'157.0.8103.78+chromiumq.cccccccccccc.build.aaaaaaaaaaaa-1')
+        self.assertEqual(subprocess.check_output(['dpkg-deb','-f',str(package),'Package'],text=True).strip(),'chromiumq')
         extracted=self.root/'extracted';subprocess.run(['dpkg-deb','-x',str(package),str(extracted)],check=True)
         for folder in ('codec-notices','codec-evidence'):
-            self.assertEqual((extracted/'opt/chromium-stealthcdp'/folder/'retained.txt').read_text(),'retained '+folder)
-        self.assertTrue((extracted/'opt/chromium-stealthcdp/codec-qualification.json').exists())
+            self.assertEqual((extracted/'opt/chromiumQ'/folder/'retained.txt').read_text(),'retained '+folder)
+        self.assertTrue((extracted/'opt/chromiumQ/codec-qualification.json').exists())
+
+    def test_windows_install_uses_chromiumq_root_and_reads_both_manifest_schemas(self):
+        tools = self.root / 'tools'
+        tools.mkdir()
+        app_data = self.root / 'LocalAppData'
+        (tools / 'wslpath').write_text('#!/bin/sh\nprintf "%s" "$2"\n')
+        (tools / 'powershell.exe').write_text(
+            '#!/bin/sh\ncase "$3" in\n'
+            '  *LOCALAPPDATA*) printf "%s" "$FIXTURE_APP_DATA" ;;\n'
+            '  *) printf "%s" "$3" > "$FIXTURE_COMMAND" ;;\nesac\n'
+        )
+        for tool in tools.iterdir():
+            tool.chmod(0o755)
+        legacy = app_data / 'chromium-stealthcdp/existing'
+        legacy.mkdir(parents=True)
+        (legacy / 'chrome.exe').write_bytes(b'old browser')
+        artifact = self.root / 'windows-artifact'
+        (artifact / 'chrome-win64').mkdir(parents=True)
+        (artifact / 'chrome-win64/chrome.exe').write_bytes(b'candidate browser')
+        (artifact / 'patches').mkdir()
+        (artifact / 'patches.sha256').touch()
+        junction_command = self.root / 'junction-command'
+        env = {**os.environ, 'PATH': f'{tools}:{os.environ["PATH"]}',
+               'FIXTURE_APP_DATA': str(app_data), 'FIXTURE_COMMAND': str(junction_command)}
+        for index, schema in enumerate(('chromium-stealthcdp.artifact.v1', 'chromiumQ.artifact.v1')):
+            with self.subTest(schema=schema):
+                name = f'158.0.8127.36+chromiumq.fixture{index}'
+                (artifact / 'manifest.json').write_text(json.dumps({
+                    'schema': schema, 'platform': 'win', 'artifactName': name,
+                    'executable': {'relativePath': 'chrome-win64/chrome.exe'},
+                }))
+                result = subprocess.run([str(REPO / 'scripts/install-windows-user.sh'),
+                                         '--artifact', str(artifact)], env=env, text=True,
+                                        capture_output=True, timeout=30)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                install = app_data / 'chromiumQ'
+                self.assertEqual((install / name / 'chrome.exe').read_bytes(), b'candidate browser')
+                self.assertIn(str(install / 'current'), junction_command.read_text())
+                self.assertIn(str(install / name), junction_command.read_text())
+                self.assertEqual((legacy / 'chrome.exe').read_bytes(), b'old browser')
 
     def test_smoke_reaps_children_and_preserves_unrelated_process(self):
         bindir = self.root / 'bin'

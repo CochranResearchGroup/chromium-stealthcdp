@@ -45,8 +45,8 @@ class CodecContinuityTests(unittest.TestCase):
         first = pipeline.artifact_name(self.target['version'], queue, 'a' * 64)
         second = pipeline.artifact_name(self.target['version'], queue, 'b' * 64)
         self.assertNotEqual(first, second)
-        self.assertEqual(first, f'157.0.8103.78+stealthcdp.{queue[:12]}.build.aaaaaaaaaaaa')
-        self.assertEqual(second, f'157.0.8103.78+stealthcdp.{queue[:12]}.build.bbbbbbbbbbbb')
+        self.assertEqual(first, f'157.0.8103.78+chromiumq.{queue[:12]}.build.aaaaaaaaaaaa')
+        self.assertEqual(second, f'157.0.8103.78+chromiumq.{queue[:12]}.build.bbbbbbbbbbbb')
 
     def test_resolved_testing_or_codec_mismatch_never_compiles(self):
         expected = {

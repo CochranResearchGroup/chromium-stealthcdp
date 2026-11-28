@@ -12,7 +12,7 @@ import stat
 import sys
 import time
 
-CONFIG = Path('/etc/chromium-stealthcdp/process-census.json')
+CONFIG = Path('/etc/chromiumQ/process-census.json')
 SCHEMA = 'stealthcdp.process-census.v1'
 
 

@@ -5,7 +5,7 @@ usage() {
   cat <<'EOF'
 Usage: scripts/check-freshness.sh [--src PATH] [--artifact PATH] [--installed PATH]
 
-Checks whether a promoted or installed chromium-stealthcdp binary matches the
+Checks whether a promoted or installed chromiumQ binary matches the
 current Chromium source checkout and this patchset repo.
 
 Exit codes:
@@ -18,7 +18,7 @@ EOF
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 src="$repo_root/../src"
-artifact="$repo_root/../artifacts/chromium-stealthcdp/current"
+artifact="$repo_root/../artifacts/chromiumQ/current"
 installed=""
 
 while [[ $# -gt 0 ]]; do
@@ -165,7 +165,7 @@ if (missingFields.length) {
   fail(3, 'manifest is incomplete', { missingFields });
 }
 
-if (manifest.schema !== 'chromium-stealthcdp.artifact.v1') {
+if (!['chromiumQ.artifact.v1', 'chromium-stealthcdp.artifact.v1'].includes(manifest.schema)) {
   fail(3, `unsupported manifest schema: ${manifest.schema}`);
 }
 

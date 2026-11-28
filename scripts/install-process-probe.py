@@ -40,10 +40,12 @@ def main():
         raise SystemExit('Require a named non-root account')
     home = Path(account.pw_dir)
     config = {'uid': account.pw_uid, 'roots': [
+        str(home / '.local/state/chromiumQ/automation/builds'),
+        str(home / '.local/share/chromiumQ'),
         str(home / '.local/state/chromium-stealthcdp/automation/builds'),
         str(home / '.local/share/chromium-stealthcdp')]}
-    probe = Path('/usr/local/libexec/chromium-stealthcdp-process-probe')
-    config_path = Path('/etc/chromium-stealthcdp/process-census.json')
+    probe = Path('/usr/local/libexec/chromiumQ-process-probe')
+    config_path = Path('/etc/chromiumQ/process-census.json')
     rule = f'{args.user} ALL=(root) NOPASSWD: {probe} ""\n'
     # Validate the exact no-arguments rule before installing privilege policy.
     with tempfile.NamedTemporaryFile(mode='w') as stream:
@@ -52,7 +54,7 @@ def main():
         subprocess.run(['/usr/sbin/visudo', '-cf', stream.name], check=True)
     install(config_path, (json.dumps(config, indent=2) + '\n').encode(), 0o644)
     install(probe, Path(__file__).with_name('automation_process_probe.py').read_bytes(), 0o755)
-    install(Path('/etc/sudoers.d/chromium-stealthcdp-process-probe'), rule.encode(), 0o440)
+    install(Path('/etc/sudoers.d/chromiumQ-process-probe'), rule.encode(), 0o440)
     print(json.dumps({'probe': str(probe), 'config': str(config_path), 'uid': account.pw_uid}))
 
 

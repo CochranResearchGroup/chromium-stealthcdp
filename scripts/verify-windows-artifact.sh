@@ -5,15 +5,15 @@ usage() {
   cat <<'EOF'
 Usage: scripts/verify-windows-artifact.sh [--artifact PATH] [--smoke-output PATH] [--remote-debugging-address ADDR]
 
-Verifies a promoted or extracted Windows chromium-stealthcdp artifact by
+Verifies a promoted or extracted Windows chromiumQ artifact by
 launching chrome.exe through PowerShell and checking navigator.webdriver over
 CDP from WSL.
 EOF
 }
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-artifact="$repo_root/../artifacts/chromium-stealthcdp/current"
-smoke_output="/tmp/chromium-stealthcdp-windows-smoke.json"
+artifact="$repo_root/../artifacts/chromiumQ/current"
+smoke_output="/tmp/chromiumQ-windows-smoke.json"
 remote_debugging_address="127.0.0.1"
 
 while [[ $# -gt 0 ]]; do

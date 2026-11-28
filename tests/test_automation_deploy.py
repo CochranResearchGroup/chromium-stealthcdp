@@ -15,10 +15,12 @@ REPO = Path(__file__).resolve().parents[1]
 
 class DeploymentTests(unittest.TestCase):
     def setUp(self):
+        self.enterContext(patch.object(m.shutil, 'disk_usage',
+                                       return_value=SimpleNamespace(free=500 * 1024**3)))
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.home = Path(self.temp.name) / 'home'
-        self.root = self.home / '.local/share/chromium-stealthcdp'
+        self.root = self.home / '.local/share/chromiumQ'
         self.root.mkdir(parents=True)
         self.config = self.home / '.agent-browser/config.json'
         self.config.parent.mkdir()
@@ -38,7 +40,11 @@ class DeploymentTests(unittest.TestCase):
                          'executable': {'relativePath': 'chrome-linux/chrome', 'sha256': m.sha256(exe)},
                          'smoke': {'relativePath': 'smoke.json', 'sha256': m.sha256(smoke)}}
         m.atomic_json(self.candidate / 'manifest.json', self.manifest)
+        self.profile = self.home / '.config/chromium/Default/Preferences'
+        self.profile.parent.mkdir(parents=True)
+        self.profile.write_bytes(b'preserve this profile')
         (self.root / 'old').mkdir()
+        (self.root / 'old/previous-browser').write_bytes(b'previous browser')
         (self.root / 'current').symlink_to('old')
 
     def test_failed_acceptance_restores_config_alias_and_halts(self):
@@ -48,7 +54,9 @@ class DeploymentTests(unittest.TestCase):
                 m.deploy(self.candidate, self.state, REPO, home=self.home)
         self.assertEqual((self.root / 'current').readlink(), Path('old'))
         self.assertEqual(self.config.read_bytes(), before)
-        self.assertFalse((self.home / '.local/bin/chromium-stealthcdp').exists())
+        self.assertEqual(self.profile.read_bytes(), b'preserve this profile')
+        self.assertEqual((self.root / 'old/previous-browser').read_bytes(), b'previous browser')
+        self.assertFalse((self.home / '.local/bin/chromiumQ').exists())
         self.assertTrue((self.state / 'deployment-halted.json').exists())
         self.assertFalse((self.root / self.manifest['artifactName'] / m.OWNER_MARKER).exists())
         with self.assertRaisesRegex(m.DeploymentError, 'halted'):
