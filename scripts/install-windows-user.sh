@@ -5,17 +5,17 @@ usage() {
   cat <<'EOF'
 Usage: scripts/install-windows-user.sh [--artifact PATH] [--install-root PATH] [--force]
 
-Installs a promoted Windows chromium-stealthcdp artifact into the WSL tenant
+Installs a promoted Windows chromiumQ artifact into the WSL tenant
 owner's Windows LocalAppData tree. The default install root is:
 
-  %LOCALAPPDATA%\chromium-stealthcdp
+  %LOCALAPPDATA%\chromiumQ
 
 The script creates or updates a Windows directory junction named `current`.
 EOF
 }
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-artifact="$repo_root/../artifacts/chromium-stealthcdp/current"
+artifact="$repo_root/../artifacts/chromiumQ/current"
 install_root=""
 force=false
 
@@ -88,7 +88,7 @@ fi
 metadata="$(node - "$manifest" <<'NODE'
 const fs = require('fs');
 const manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-if (manifest.schema !== 'chromium-stealthcdp.artifact.v1') {
+if (!['chromiumQ.artifact.v1', 'chromium-stealthcdp.artifact.v1'].includes(manifest.schema)) {
   throw new Error(`unsupported manifest schema: ${manifest.schema}`);
 }
 if (manifest.platform !== 'win') {
@@ -112,7 +112,7 @@ fi
 
 if [[ -z "$install_root" ]]; then
   local_app_data="$("$powershell_cmd" -NoProfile -Command '[Console]::Out.Write($env:LOCALAPPDATA)')"
-  install_root="$(wslpath -u "$local_app_data")/chromium-stealthcdp"
+  install_root="$(wslpath -u "$local_app_data")/chromiumQ"
 fi
 
 mkdir -p "$install_root"

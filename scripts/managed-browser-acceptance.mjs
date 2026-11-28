@@ -30,7 +30,7 @@ try{
  await send('initialize',{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'stealthcdp-updater-acceptance',version:'1'}});
  child.stdin.write(JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n');
  receipt.phase='open_requested';save();
- task=await call('browser_open',{profileMode:'disposable',taskKey:receipt.taskKey,url:'about:blank',serviceName:'chromium-stealthcdp',agentName:'stealthcdp-updater',taskName:'Verify fresh managed browser executable after update'});
+ task=await call('browser_open',{profileMode:'disposable',taskKey:receipt.taskKey,url:'about:blank',serviceName:'chromiumQ',agentName:'chromiumQ-updater',taskName:'Verify fresh managed browser executable after update'});
  receipt.task=task;receipt.phase='opened';save();assert(task.taskId&&task.profileId);
  const found=await until(()=>{const rows=browsers().filter(p=>basename(p.profile)===task.profileId&&!p.argv.includes('--type='));assert(rows.length<=1,'Ambiguous managed browser identity');return rows[0]},'exact managed browser process');
  profile=found.profile;receipt.browserPid=found.pid;receipt.browserExecutable=found.executable;receipt.browserSha256=hash('/proc/'+found.pid+'/exe');save();

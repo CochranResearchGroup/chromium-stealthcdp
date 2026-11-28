@@ -2,8 +2,8 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-artifact="$repo_root/../artifacts/chromium-stealthcdp/current"
-install_name=chromium-stealthcdp
+artifact="$repo_root/../artifacts/chromiumQ/current"
+install_name=chromiumQ
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --artifact) artifact="${2:?artifact path required}"; shift 2 ;;
@@ -30,7 +30,7 @@ import uuid
 
 artifact = Path(sys.argv[1]).resolve(strict=True)
 manifest = json.loads((artifact / 'manifest.json').read_text())
-assert manifest['schema'] == 'chromium-stealthcdp.artifact.v1', 'unsupported manifest'
+assert manifest['schema'] in ('chromiumQ.artifact.v1', 'chromium-stealthcdp.artifact.v1'), 'unsupported manifest'
 assert manifest.get('platform', 'linux') == 'linux', 'Linux artifact required'
 name = manifest['artifactName']
 assert re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9.+_-]*', name), 'invalid artifact name'

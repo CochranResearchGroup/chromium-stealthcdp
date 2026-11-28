@@ -17,7 +17,7 @@ import urllib.request
 
 from automation_profiles import BUILD_PROFILES, available_memory_kib, select_profile
 
-REPOSITORY = 'CochranResearchGroup/chromium-stealthcdp'
+REPOSITORY = 'CochranResearchGroup/chromiumQ'
 STABLE_URL = 'https://chromiumdash.appspot.com/fetch_releases?channel=Stable&platform=Linux&num=1'
 class AwaitingChecks(RuntimeError):
     pass
@@ -220,7 +220,7 @@ class GitHub:
 
     def publish(self, ctx, integrated):
         require_release_qualification(ctx)
-        tag = f'v{ctx["version"]}-stealthcdp.{ctx["patch_queue_sha256"][:12]}.build.{ctx["build_recipe_sha256"][:12]}'
+        tag = f'v{ctx["version"]}-chromiumq.{ctx["patch_queue_sha256"][:12]}.build.{ctx["build_recipe_sha256"][:12]}'
         repo = Path(ctx['patchset_repo'])
         if command(['git', 'remote', 'get-url', 'origin'], cwd=repo) != f'https://github.com/{self.repo}.git':
             raise RuntimeError('source publication remote is outside approved repository')
@@ -307,7 +307,7 @@ class Controller:
     def maintain(self):
         """Cleanup failure must never undo a committed deployment verdict."""
         from automation_retention import maintain
-        installed_root = Path(self.config.get('installed_root', str(Path.home() / '.local/share/chromium-stealthcdp')))
+        installed_root = Path(self.config.get('installed_root', str(Path.home() / '.local/share/chromiumQ')))
         try:
             result = maintain(self.root, installed_root) if installed_root.exists() else {'skipped': 'installed root absent'}
         except Exception as exc:
@@ -487,7 +487,8 @@ def adopt(config, artifact):
     if actual != f'Chromium {version}':
         raise RuntimeError('baseline version/branding mismatch')
     GitHub().preflight()
-    tag = f'v{version}-stealthcdp.{manifest["patchset"]["patchQueueSha256"][:12]}'
+    release_identity = 'chromiumq' if manifest.get('schema') == 'chromiumQ.artifact.v1' else 'stealthcdp'
+    tag = f'v{version}-{release_identity}.{manifest["patchset"]["patchQueueSha256"][:12]}'
     if manifest.get('buildRecipeSha256'):
         tag += '.build.' + manifest['buildRecipeSha256'][:12]
     release = GitHub().api(f'releases/tags/{tag}')

@@ -16,7 +16,7 @@ class RuntimeRefreshTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.home = Path(self.temp.name)
-        self.root = self.home / '.local/share/chromium-stealthcdp'
+        self.root = self.home / '.local/share/chromiumQ'
         self.selected = self.home / '.local/lib/agent-browser/current/bin/agent-browser'
         self.selected.parent.mkdir(parents=True)
         self.selected.write_text('selected executable')
@@ -171,7 +171,7 @@ class RefreshDeploymentOrderTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.home = Path(self.temp.name) / 'home'
-        self.root = self.home / '.local/share/chromium-stealthcdp'
+        self.root = self.home / '.local/share/chromiumQ'
         (self.root / 'old').mkdir(parents=True)
         (self.root / 'current').symlink_to('old')
         self.config = self.home / '.agent-browser/config.json'

@@ -5,17 +5,17 @@ usage() {
   cat <<'EOF'
 Usage: scripts/package-deb.sh [--artifact PATH] [--output-dir PATH] [--revision N] [--maintainer TEXT]
 
-Builds a side-by-side Debian package from a promoted chromium-stealthcdp
+Builds a side-by-side Debian package from a promoted chromiumQ
 artifact. This script packages the promoted artifact only; it does not read or
 copy from a live Chromium out directory.
 EOF
 }
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-artifact="$repo_root/../artifacts/chromium-stealthcdp/current"
-output_dir="$repo_root/../artifacts/chromium-stealthcdp/packages"
+artifact="$repo_root/../artifacts/chromiumQ/current"
+output_dir="$repo_root/../artifacts/chromiumQ/packages"
 revision="1"
-package_name="chromium-stealthcdp"
+package_name="chromiumq"
 maintainer="chromiumQ Maintainers <no-reply@example.com>"
 
 while [[ $# -gt 0 ]]; do
@@ -63,7 +63,7 @@ fi
 metadata="$(node - "$manifest" <<'NODE'
 const fs = require('fs');
 const manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-if (manifest.schema !== 'chromium-stealthcdp.artifact.v1') {
+if (!['chromiumQ.artifact.v1', 'chromium-stealthcdp.artifact.v1'].includes(manifest.schema)) {
   throw new Error(`unsupported manifest schema: ${manifest.schema}`);
 }
 if (manifest.platform && manifest.platform !== 'linux') {
@@ -80,7 +80,7 @@ if (!patchsetSha) {
 }
 const patchQueueSha = manifest.patchset && manifest.patchset.patchQueueSha256;
 const packageIdentitySha = patchQueueSha || patchsetSha;
-const artifactName = manifest.artifactName || `${versionNumber}+stealthcdp.${packageIdentitySha.slice(0, 12)}`;
+const artifactName = manifest.artifactName || `${versionNumber}+chromiumq.${packageIdentitySha.slice(0, 12)}`;
 if (manifest.buildRecipeSha256 && !/^[a-f0-9]{64}$/.test(manifest.buildRecipeSha256)) {
   throw new Error('invalid build recipe digest');
 }
@@ -102,7 +102,7 @@ version_number="$(node -e 'const m=JSON.parse(process.argv[1]); console.log(m.ve
 patchset_short="$(node -e 'const m=JSON.parse(process.argv[1]); console.log(m.patchsetShort)' "$metadata")"
 executable_rel="$(node -e 'const m=JSON.parse(process.argv[1]); console.log(m.executable)' "$metadata")"
 recipe_suffix="$(node -e 'const m=JSON.parse(process.argv[1]); console.log(m.recipeSuffix)' "$metadata")"
-package_version="${version_number}+stealthcdp.${patchset_short}${recipe_suffix}-${revision}"
+package_version="${version_number}+chromiumq.${patchset_short}${recipe_suffix}-${revision}"
 deb_name="${package_name}_${package_version}_amd64.deb"
 
 if [[ ! -x "$artifact/$executable_rel" ]]; then
@@ -117,7 +117,7 @@ cleanup() {
 trap cleanup EXIT
 
 stage="$tmpdir/${package_name}_${package_version}"
-install_root="$stage/opt/chromium-stealthcdp"
+install_root="$stage/opt/chromiumQ"
 mkdir -p "$stage/DEBIAN" "$install_root" "$stage/usr/bin" "$stage/usr/share/doc/$package_name" "$stage/usr/share/man/man1"
 
 runtime_files=(
@@ -169,17 +169,17 @@ if [[ -n "$recipe_suffix" ]]; then
   cp -a "$artifact/codec-notices" "$install_root/codec-notices"
   cp -a "$artifact/codec-evidence" "$install_root/codec-evidence"
 fi
-ln -s /opt/chromium-stealthcdp/chrome "$stage/usr/bin/chromium-stealthcdp"
+ln -s /opt/chromiumQ/chrome "$stage/usr/bin/chromiumQ"
 
 mkdir -p "$stage/usr/share/applications"
-cat > "$stage/usr/share/applications/chromium-stealthcdp.desktop" <<'EOF'
+cat > "$stage/usr/share/applications/chromiumQ.desktop" <<'EOF'
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=chromiumQ
-Comment=Stable Chromium with private CDP behavior
-Exec=/usr/bin/chromium-stealthcdp %U
-TryExec=/usr/bin/chromium-stealthcdp
+Comment=Chromium for reliable browser automation testing
+Exec=/usr/bin/chromiumQ %U
+TryExec=/usr/bin/chromiumQ
 Icon=web-browser
 Terminal=false
 Categories=Network;WebBrowser;
@@ -189,27 +189,27 @@ StartupWMClass=chromium
 EOF
 
 cat > "$stage/usr/share/doc/$package_name/README" <<EOF
-chromium-stealthcdp
+chromiumQ
 
-Side-by-side Chromium build with the chromium-stealthcdp patch queue applied.
+Side-by-side Chromium build with the chromiumQ patch queue applied.
 
 Executable:
-  /usr/bin/chromium-stealthcdp
+  /usr/bin/chromiumQ
 
 Manifest:
-  /opt/chromium-stealthcdp/manifest.json
+  /opt/chromiumQ/manifest.json
 EOF
 
 cat > "$stage/usr/share/doc/$package_name/copyright" <<'EOF'
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: chromium-stealthcdp
+Upstream-Name: chromiumQ
 
 Files: *
 Copyright: 2026 chromiumQ local package maintainers
            and Chromium authors and other upstream rightsholders
 License: Chromium
  This package is a local redistribution of a Chromium build with the
- chromium-stealthcdp patch queue applied. Chromium source licensing applies to
+ chromiumQ patch queue applied. Chromium source licensing applies to
  the bundled browser files. See the Chromium source tree for complete license
  notices.
 EOF
@@ -218,31 +218,31 @@ changelog_date="$(date -R)"
 cat > "$tmpdir/changelog.Debian" <<EOF
 $package_name ($package_version) local; urgency=medium
 
-  * Package promoted chromium-stealthcdp artifact.
+  * Package promoted chromiumQ artifact.
 
  -- $maintainer  $changelog_date
 EOF
 gzip -9n < "$tmpdir/changelog.Debian" > "$stage/usr/share/doc/$package_name/changelog.Debian.gz"
 
-cat > "$tmpdir/chromium-stealthcdp.1" <<EOF
+cat > "$tmpdir/chromiumQ.1" <<EOF
 .TH CHROMIUM-STEALTHCDP 1 "$(date +%Y-%m-%d)" "$package_version" "User Commands"
 .SH NAME
-chromium-stealthcdp \\- side-by-side Chromium build with the chromium-stealthcdp patch queue
+chromiumQ \\- side-by-side Chromium build with the chromiumQ patch queue
 .SH SYNOPSIS
-.B chromium-stealthcdp
+.B chromiumQ
 [\fICHROMIUM OPTIONS\fR]
 .SH DESCRIPTION
-.B chromium-stealthcdp
+.B chromiumQ
 launches the packaged Chromium binary installed under
-.B /opt/chromium-stealthcdp.
+.B /opt/chromiumQ.
 It is intended for agent-browser validation and runtime use without replacing
 the system Chromium or Google Chrome installation.
 .SH FILES
 .TP
-.B /opt/chromium-stealthcdp/manifest.json
+.B /opt/chromiumQ/manifest.json
 Build, source, and patchset provenance for the installed artifact.
 EOF
-gzip -9n < "$tmpdir/chromium-stealthcdp.1" > "$stage/usr/share/man/man1/chromium-stealthcdp.1.gz"
+gzip -9n < "$tmpdir/chromiumQ.1" > "$stage/usr/share/man/man1/chromiumQ.1.gz"
 
 find "$stage" -type d -exec chmod 0755 {} +
 find "$stage" -type f -exec chmod 0644 {} +
@@ -262,9 +262,9 @@ Architecture: amd64
 Installed-Size: $installed_size
 Maintainer: $maintainer
 Depends: libc6, libasound2t64 | libasound2, libatk-bridge2.0-0t64 | libatk-bridge2.0-0, libatk1.0-0t64 | libatk1.0-0, libatspi2.0-0, libcairo2, libcups2t64 | libcups2, libdbus-1-3, libdrm2, libexpat1, libgbm1, libgcc-s1, libglib2.0-0t64 | libglib2.0-0, libnspr4, libnss3, libpango-1.0-0, libudev1, libx11-6, libxcb1, libxcomposite1, libxdamage1, libxext6, libxfixes3, libxkbcommon0, libxrandr2
-Description: Side-by-side Chromium build for agent-browser stealth CDP
- Chromium build with the chromium-stealthcdp patch queue applied. It installs
- under /opt/chromium-stealthcdp and exposes /usr/bin/chromium-stealthcdp without
+Description: Side-by-side Chromium build for browser automation testing
+ Chromium build with the chromiumQ patch queue applied. It installs
+ under /opt/chromiumQ and exposes /usr/bin/chromiumQ without
  replacing system Chromium or Google Chrome.
 EOF
 

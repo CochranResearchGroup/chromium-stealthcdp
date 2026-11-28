@@ -1,8 +1,8 @@
 # chromiumQ
 
-chromiumQ is the downstream Chromium build maintained by this patch queue.
-Existing installations use the `chromium-stealthcdp` command, package and
-service identifiers.
+chromiumQ is a downstream Chromium build for agents testing browser
+automations. It prioritizes reliable, repeatable browser behavior. Disabling
+automatic Chrome DevTools Protocol port advertisement is part of that experience.
 
 ## Layout
 
@@ -31,7 +31,7 @@ From the source checkout containing the queue on the pinned base, export to a
 separate review directory first:
 
 ```sh
-git format-patch --binary -o /path/to/review-patches "$(cat /path/to/chromium-stealthcdp/upstream-revision.txt)..HEAD"
+git format-patch --binary -o /path/to/review-patches "$(cat /path/to/chromiumQ/upstream-revision.txt)..HEAD"
 ```
 
 Review the generated queue and range-diff before replacing the patch files in
@@ -43,7 +43,7 @@ From another Chromium `src` checkout at the recorded base revision or a compatib
 descendant:
 
 ```sh
-git am /path/to/chromium-stealthcdp/patches/*.patch
+git am /path/to/chromiumQ/patches/*.patch
 ```
 
 For a fast replay regression check using an existing checkout's pinned Git
@@ -65,18 +65,18 @@ Promote a smoke-tested build into the local artifact root instead:
 ```sh
 scripts/smoke.sh \
   --chrome ../src/out/Default/chrome \
-  --output /tmp/chromium-stealthcdp-smoke-current.json
+  --output /tmp/chromiumQ-smoke-current.json
 
 scripts/promote-artifact.sh \
   --src-out ../src/out/Default \
-  --artifact-root ../artifacts/chromium-stealthcdp \
-  --smoke-json /tmp/chromium-stealthcdp-smoke-current.json
+  --artifact-root ../artifacts/chromiumQ \
+  --smoke-json /tmp/chromiumQ-smoke-current.json
 ```
 
 The stable local executable path is then:
 
 ```text
-../artifacts/chromium-stealthcdp/current/chrome-linux/chrome
+../artifacts/chromiumQ/current/chrome-linux/chrome
 ```
 
 Each promoted artifact includes `manifest.json`, `smoke.json`, patch copies,
@@ -90,7 +90,7 @@ that it still matches the current Chromium checkout and patchset repo:
 ```sh
 scripts/check-freshness.sh \
   --src ../src \
-  --artifact ../artifacts/chromium-stealthcdp/current
+  --artifact ../artifacts/chromiumQ/current
 ```
 
 Exit code `0` means fresh, `1` means stale, `2` means missing, and `3` means the
@@ -102,12 +102,12 @@ For a user-scoped Linux installation with a PATH command and a desktop browser
 choice, run:
 
 ```sh
-scripts/install-linux-user.sh --artifact ../artifacts/chromium-stealthcdp/current
+scripts/install-linux-user.sh --artifact ../artifacts/chromiumQ/current
 ```
 
 This installs an immutable version under
-`${XDG_DATA_HOME:-~/.local/share}/chromium-stealthcdp`, exposes
-`~/.local/bin/chromium-stealthcdp`, and registers **chromiumQ** in the
+`${XDG_DATA_HOME:-~/.local/share}/chromiumQ`, exposes
+`~/.local/bin/chromiumQ`, and registers **chromiumQ** in the
 desktop browser chooser. It preserves existing browser profiles and does not
 change the default browser.
 
@@ -121,14 +121,14 @@ Package the promoted artifact, not the live Chromium build tree:
 
 ```sh
 scripts/package-deb.sh \
-  --artifact ../artifacts/chromium-stealthcdp/current \
-  --output-dir ../artifacts/chromium-stealthcdp/packages
+  --artifact ../artifacts/chromiumQ/current \
+  --output-dir ../artifacts/chromiumQ/packages
 ```
 
-The package installs side-by-side under `/opt/chromium-stealthcdp` and exposes:
+The `chromiumq` Debian package installs side-by-side under `/opt/chromiumQ` and exposes:
 
 ```text
-/usr/bin/chromium-stealthcdp
+/usr/bin/chromiumQ
 ```
 
 Verify an installed package with:
@@ -159,31 +159,31 @@ scripts/build.sh \
 
 scripts/smoke-windows.sh \
   --chrome ../src/out/WinStealthCDP/chrome.exe \
-  --output /tmp/chromium-stealthcdp-smoke-win.json
+  --output /tmp/chromiumQ-smoke-win.json
 
 scripts/promote-artifact.sh \
   --platform win \
   --src-out ../src/out/WinStealthCDP \
-  --artifact-root ../artifacts/chromium-stealthcdp \
-  --smoke-json /tmp/chromium-stealthcdp-smoke-win.json
+  --artifact-root ../artifacts/chromiumQ \
+  --smoke-json /tmp/chromiumQ-smoke-win.json
 
 scripts/package-windows-zip.sh \
-  --artifact ../artifacts/chromium-stealthcdp/current \
-  --output-dir ../artifacts/chromium-stealthcdp/packages
+  --artifact ../artifacts/chromiumQ/current \
+  --output-dir ../artifacts/chromiumQ/packages
 
 scripts/install-windows-user.sh \
-  --artifact ../artifacts/chromium-stealthcdp/current \
+  --artifact ../artifacts/chromiumQ/current \
   --force
 
 scripts/smoke-windows.sh \
-  --chrome /mnt/c/Users/ecoch/AppData/Local/chromium-stealthcdp/current/chrome.exe \
-  --output /tmp/chromium-stealthcdp-installed-win-smoke.json
+  --chrome /mnt/c/Users/ecoch/AppData/Local/chromiumQ/current/chrome.exe \
+  --output /tmp/chromiumQ-installed-win-smoke.json
 ```
 
 Windows executables meant to be run should be installed on the Windows
 filesystem. For a user-scoped WSL tenant install, the default root is the
 tenant owner's LocalAppData directory, for example
-`/mnt/c/Users/ecoch/AppData/Local/chromium-stealthcdp/current/chrome.exe`.
+`/mnt/c/Users/ecoch/AppData/Local/chromiumQ/current/chrome.exe`.
 
 If `gclient sync` fails at `src/build/vs_toolchain.py update --force` with a
 Google Storage 401, run `scripts/diagnose-windows-toolchain.sh`. The local

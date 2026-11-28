@@ -6,14 +6,14 @@ usage() {
 Usage: scripts/package-windows-zip.sh [--artifact PATH] [--output-dir PATH]
 
 Builds a side-by-side Windows zip package from a promoted
-chromium-stealthcdp artifact. The artifact must contain chrome-win64/chrome.exe.
+chromiumQ artifact. The artifact must contain chrome-win64/chrome.exe.
 EOF
 }
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-artifact="$repo_root/../artifacts/chromium-stealthcdp/current"
-output_dir="$repo_root/../artifacts/chromium-stealthcdp/packages"
-package_name="chromium-stealthcdp"
+artifact="$repo_root/../artifacts/chromiumQ/current"
+output_dir="$repo_root/../artifacts/chromiumQ/packages"
+package_name="chromiumQ"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -57,7 +57,7 @@ fi
 metadata="$(node - "$manifest" <<'NODE'
 const fs = require('fs');
 const manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-if (manifest.schema !== 'chromium-stealthcdp.artifact.v1') {
+if (!['chromiumQ.artifact.v1', 'chromium-stealthcdp.artifact.v1'].includes(manifest.schema)) {
   throw new Error(`unsupported manifest schema: ${manifest.schema}`);
 }
 const chromeVersion = manifest.chromeVersion || '';
@@ -80,7 +80,7 @@ NODE
 
 version_number="$(node -e 'const m=JSON.parse(process.argv[1]); console.log(m.versionNumber)' "$metadata")"
 patchset_short="$(node -e 'const m=JSON.parse(process.argv[1]); console.log(m.patchsetShort)' "$metadata")"
-zip_name="${package_name}_${version_number}+stealthcdp.${patchset_short}_win64.zip"
+zip_name="${package_name}_${version_number}+chromiumq.${patchset_short}_win64.zip"
 
 if [[ ! -f "$artifact/chrome-win64/chrome.exe" ]]; then
   echo "artifact does not contain chrome-win64/chrome.exe: $artifact" >&2

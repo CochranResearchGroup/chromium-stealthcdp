@@ -28,7 +28,9 @@ def message(outcome):
     if outcome.get('stage'):
         text += f' Stage: {outcome["stage"]}.'
     publication = outcome.get('publication', {})
-    if publication.get('url', '').startswith('https://github.com/CochranResearchGroup/chromium-stealthcdp/releases/'):
+    if publication.get('url', '').startswith((
+            'https://github.com/CochranResearchGroup/chromiumQ/releases/',
+            'https://github.com/CochranResearchGroup/chromium-stealthcdp/releases/')):
         text += '\n' + publication['url']
     if state == 'complete':
         text += '\nNew launches use the verified build. Existing sessions continue normally.'

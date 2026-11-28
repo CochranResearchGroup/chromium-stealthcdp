@@ -3,9 +3,9 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/promote-artifact.sh --src-out PATH [--artifact-root PATH] [--smoke-json PATH] [--platform linux|win] [--build-recipe-sha256 HEX]
+Usage: scripts/promote-artifact.sh --src-out PATH [--artifact-root PATH] [--smoke-json PATH] [--platform linux|win] [--build-recipe-sha256 HEX] [--patchset-root PATH]
 
-Promotes a built Chromium output directory into a versioned chromium-stealthcdp
+Promotes a built Chromium output directory into a versioned chromiumQ
 runtime artifact. The source build must already pass the matching smoke script.
 EOF
 }
@@ -15,6 +15,7 @@ artifact_root=""
 smoke_json=""
 platform="linux"
 build_recipe_sha=""
+patchset_root=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -28,6 +29,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --smoke-json)
       smoke_json="${2:-}"
+      shift 2
+      ;;
+    --patchset-root)
+      patchset_root="${2:?patchset root required}"
       shift 2
       ;;
     --build-recipe-sha256)
@@ -51,8 +56,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+patchset_root="${patchset_root:-$repo_root}"
 src_out="${src_out:-$repo_root/../src/out/Default}"
-artifact_root="${artifact_root:-$repo_root/../artifacts/chromium-stealthcdp}"
+artifact_root="${artifact_root:-$repo_root/../artifacts/chromiumQ}"
 
 case "$platform" in
   linux)
@@ -96,10 +102,10 @@ fi
 
 chromium_src="$(cd "$src_out/../.." && pwd)"
 chromium_sha="$(git -C "$chromium_src" rev-parse HEAD)"
-patchset_sha="$(git -C "$repo_root" rev-parse HEAD)"
-patchset_dirty="$(git -C "$repo_root" status --short)"
+patchset_sha="$(git -C "$patchset_root" rev-parse HEAD)"
+patchset_dirty="$(git -C "$patchset_root" status --short)"
 chromium_dirty="$(git -C "$chromium_src" status --short --untracked-files=no)"
-upstream_revision="$(tr -d '[:space:]' < "$repo_root/upstream-revision.txt")"
+upstream_revision="$(tr -d '[:space:]' < "$patchset_root/upstream-revision.txt")"
 if [[ "$platform" == "linux" ]]; then
   chrome_version="$("$chrome" --version | sed 's/[[:space:]]*$//')"
 else
@@ -111,7 +117,7 @@ if [[ -z "$chrome_version" ]]; then
 fi
 version_number="$(printf '%s\n' "$chrome_version" | awk '{print $2}')"
 patch_queue_sha="$(
-  cd "$repo_root/patches"
+  cd "$patchset_root/patches"
   find . -type f -name '*.patch' -print0 \
     | sort -z \
     | xargs -0 sha256sum \
@@ -120,7 +126,7 @@ patch_queue_sha="$(
     | awk '{print $1}'
 )"
 patchset_short="${patch_queue_sha:0:12}"
-artifact_name="${version_number}+stealthcdp.${patchset_short}"
+artifact_name="${version_number}+chromiumq.${patchset_short}"
 if [[ -n "$build_recipe_sha" ]]; then
   [[ "$build_recipe_sha" =~ ^[a-f0-9]{64}$ ]] || { echo 'invalid build recipe digest' >&2; exit 2; }
   artifact_name="$artifact_name.build.${build_recipe_sha:0:12}"
@@ -220,7 +226,7 @@ for dir in "${runtime_dirs[@]}"; do
   fi
 done
 
-cp -a "$repo_root"/patches/*.patch "$dest/patches/"
+cp -a "$patchset_root"/patches/*.patch "$dest/patches/"
 cp -a "$smoke_json" "$dest/$smoke_rel"
 
 (
@@ -264,7 +270,7 @@ function sha256(file) {
 }
 
 const manifest = {
-  schema: 'chromium-stealthcdp.artifact.v1',
+  schema: 'chromiumQ.artifact.v1',
   ...(process.env.BUILD_RECIPE_SHA ? {buildRecipeSha256: process.env.BUILD_RECIPE_SHA} : {}),
   artifactName: process.env.ARTIFACT_NAME,
   platform: process.env.PLATFORM,

@@ -43,7 +43,7 @@ def build_recipe_sha256():
 
 
 def artifact_name(version, queue, recipe):
-    return f'{version}+stealthcdp.{queue[:12]}.build.{recipe[:12]}'
+    return f'{version}+chromiumq.{queue[:12]}.build.{recipe[:12]}'
 
 
 class PipelineError(RuntimeError):
@@ -289,7 +289,7 @@ class CandidatePipeline:
         snapshot = Path(context['patchset'])
         self.command(context, ['git', 'clone', '--no-hardlinks', self.repo, snapshot])
         self.command(context, ['git', 'remote', 'set-url', 'origin',
-                               'https://github.com/CochranResearchGroup/chromium-stealthcdp.git'], cwd=snapshot)
+                               'https://github.com/CochranResearchGroup/chromiumQ.git'], cwd=snapshot)
         exported = snapshot / 'patches'
         for patch in exported.glob('*.patch'):
             patch.unlink()
@@ -417,7 +417,7 @@ class CandidatePipeline:
         if artifact.is_symlink():
             raise PipelineError('Staged candidate must be an owned directory, not a symlink')
         if not artifact.exists():
-            self.command(context, [Path(context['patchset']) / 'scripts/promote-artifact.sh', '--src-out', out,
+            self.command(context, [self.repo / 'scripts/promote-artifact.sh', '--patchset-root', context['patchset'], '--src-out', out,
                                    '--artifact-root', stage, '--smoke-json', smoke,
                                    '--build-recipe-sha256', context['build_recipe_sha256']])
         # An interrupted qualification may have already promoted this immutable
@@ -511,11 +511,11 @@ class CandidatePipeline:
         extracted = packages / 'deb-verification'
         self.command(context, ['dpkg-deb', '--extract', debs[0], extracted])
         manifest = json.loads((artifact / 'manifest.json').read_text())
-        if sha256(extracted / 'opt/chromium-stealthcdp/chrome') != manifest['executable']['sha256']:
+        if sha256(extracted / 'opt/chromiumQ/chrome') != manifest['executable']['sha256']:
             raise PipelineError('Debian executable differs from accepted artifact')
         # Remove only this newly extracted disposable verification directory.
         shutil.rmtree(extracted)
-        archive = packages / f'chromium-stealthcdp_{artifact.name}_linux-x86_64.tar.zst'
+        archive = packages / f'chromiumQ_{artifact.name}_linux-x86_64.tar.zst'
         self.command(context, ['tar', '--zstd', '-cf', archive, '-C', artifact.parent, artifact.name])
         self.command(context, ['tar', '--zstd', '--compare', '--file', archive, '-C', artifact.parent, artifact.name])
         for name in ('manifest.json', 'smoke.json', 'patches.sha256'):

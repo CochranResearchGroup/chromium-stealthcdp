@@ -15,6 +15,15 @@ REPO = Path(__file__).resolve().parents[1]
 def run(*args):
     return subprocess.check_output([str(x) for x in args], text=True).strip()
 
+def unit_running(unit):
+    state = run('systemctl', '--user', 'show', unit, '--property=ActiveState', '--value')
+    if state in ('inactive', 'failed'):
+        return False
+    if state in ('active', 'activating', 'reloading', 'deactivating', 'maintenance', 'refreshing'):
+        return True
+    raise RuntimeError(f'Cannot establish {unit} activity: {state!r}')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--depot-tools', required=True, type=Path)
@@ -29,17 +38,25 @@ def main():
         raise SystemExit('ffmpeg is required for actual H264/AAC qualification')
     sha = run('git', '-C', REPO, 'rev-parse', 'HEAD')
     home = Path.home()
-    root = home / '.local/lib/chromium-stealthcdp-automation'
+    root = home / '.local/lib/chromiumQ-automation'
     generation = root / 'generations' / sha
     generation.parent.mkdir(parents=True, exist_ok=True)
     if not generation.exists():
         run('git', 'clone', '--no-hardlinks', REPO, generation)
         run('git', '-C', generation, 'checkout', '--detach', sha)
-    state = home / '.local/state/chromium-stealthcdp/automation'
+    config = home / '.config/chromiumQ/automation.json'
+    legacy_config = home / '.config/chromium-stealthcdp/automation.json'
+    source_config = config if config.exists() else legacy_config
+    previous_config = json.loads(source_config.read_text()) if source_config.exists() else {}
+    default_state = (home / '.local/state/chromium-stealthcdp/automation'
+                     if source_config == legacy_config and legacy_config.exists()
+                     else home / '.local/state/chromiumQ/automation')
+    # Preserve run paths, pinned queues and the shared controller lock on upgrade.
+    state = Path(previous_config.get('state_dir', default_state))
+    if not state.is_absolute():
+        parser.error('state_dir must be absolute')
     state.mkdir(parents=True, exist_ok=True, mode=0o700)
-    config = home / '.config/chromium-stealthcdp/automation.json'
     config.parent.mkdir(parents=True, exist_ok=True)
-    previous_config = json.loads(config.read_text()) if config.exists() else {}
     profile_name = args.build_profile or previous_config.get('build_profile', 'auto')
     if profile_name not in ('auto', *BUILD_PROFILES):
         parser.error(f'unknown build profile: {profile_name}')
@@ -58,9 +75,9 @@ def main():
     units = home / '.config/systemd/user'
     units.mkdir(parents=True, exist_ok=True)
     path = ':'.join([str(home / '.local/bin'), str(args.depot_tools.resolve()), str(Path(ffmpeg).parent), '/usr/local/bin', '/usr/bin', '/bin'])
-    (units / 'chromium-stealthcdp-update.service').write_text(f'''[Unit]
+    (units / 'chromiumQ-update.service').write_text(f'''[Unit]
 Description=Select the chromiumQ build profile
-PropagatesStopTo=chromium-stealthcdp-build@conservative.service chromium-stealthcdp-build@standard.service
+PropagatesStopTo=chromiumQ-build@conservative.service chromiumQ-build@standard.service
 
 [Service]
 Type=oneshot
@@ -80,7 +97,7 @@ ExecStart=/usr/bin/python3 {quote(current / 'scripts/automation.py')} --config {
 Environment="PATH={path}"
 ExecStopPost=-/usr/bin/python3 {quote(current / 'scripts/automation_notify.py')} --config {quote(config)} service-result
 Environment=PYTHONDONTWRITEBYTECODE=1
-WorkingDirectory=%h/.local/state/chromium-stealthcdp/automation
+WorkingDirectory={quote(state)}
 UMask=0077
 Nice=10
 IOSchedulingClass=idle
@@ -92,19 +109,19 @@ TimeoutStopSec=30s
 KillMode=control-group
 Restart=no
 '''
-        (units / f'chromium-stealthcdp-build@{name}.service').write_text(service)
-    (units / 'chromium-stealthcdp-update.timer').write_text('''[Unit]
+        (units / f'chromiumQ-build@{name}.service').write_text(service)
+    (units / 'chromiumQ-update.timer').write_text('''[Unit]
 Description=Weekly chromiumQ Stable check
 
 [Timer]
 OnCalendar=Sun *-*-* 03:00:00 America/Chicago
 Persistent=true
-Unit=chromium-stealthcdp-update.service
+Unit=chromiumQ-update.service
 
 [Install]
 WantedBy=timers.target
 ''')
-    launcher = home / '.local/bin/chromium-stealthcdp-update'
+    launcher = home / '.local/bin/chromiumQ-update'
     launcher.parent.mkdir(parents=True, exist_ok=True)
     # Manual run uses the very same bounded service, rather than bypassing cgroups.
     launcher.write_text('''#!/usr/bin/env python3
@@ -114,22 +131,41 @@ import sys
 from pathlib import Path
 home=Path.home()
 if len(sys.argv)==1 or sys.argv[1:] == ['run']:
-    sys.exit(subprocess.call(['systemctl','--user','start','--no-block','chromium-stealthcdp-update.service']))
+    sys.exit(subprocess.call(['systemctl','--user','start','--no-block','chromiumQ-update.service']))
 if sys.argv[1:] == ['logs']:
-    os.execvp('journalctl',['journalctl','--user','-u','chromium-stealthcdp-update.service','-u','chromium-stealthcdp-build@*.service','-n','80','--no-pager'])
+    os.execvp('journalctl',['journalctl','--user','-u','chromiumQ-update.service','-u','chromiumQ-build@*.service','-n','80','--no-pager'])
 if sys.argv[1:] == ['status']:
-    os.execvp('python3',['python3',str(home/'.local/lib/chromium-stealthcdp-automation/current/scripts/automation.py'),'--config',str(home/'.config/chromium-stealthcdp/automation.json'),'status'])
-raise SystemExit('Usage: chromium-stealthcdp-update [run|status|logs]')
+    os.execvp('python3',['python3',str(home/'.local/lib/chromiumQ-automation/current/scripts/automation.py'),'--config',str(home/'.config/chromiumQ/automation.json'),'status'])
+raise SystemExit('Usage: chromiumQ-update [run|status|logs]')
 ''')
     launcher.chmod(0o755)
-    run('systemd-analyze', '--user', 'verify', units / 'chromium-stealthcdp-update.service', units / 'chromium-stealthcdp-update.timer',
-        *(units / f'chromium-stealthcdp-build@{name}.service' for name in BUILD_PROFILES))
+    run('systemd-analyze', '--user', 'verify', units / 'chromiumQ-update.service', units / 'chromiumQ-update.timer',
+        *(units / f'chromiumQ-build@{name}.service' for name in BUILD_PROFILES))
     run('systemctl', '--user', 'daemon-reload')
     if args.enable:
         baseline = state / 'baseline.json'
         if not baseline.exists() or not json.loads(baseline.read_text()).get('acceptance', {}).get('success'):
             raise SystemExit('Adopt and accept published installed baseline before enabling timer')
-        run('systemctl', '--user', 'enable', '--now', 'chromium-stealthcdp-update.timer')
+        legacy_timer = 'chromium-stealthcdp-update.timer'
+        legacy_services = ('chromium-stealthcdp-update.service',
+                           *(f'chromium-stealthcdp-build@{name}.service' for name in BUILD_PROFILES))
+        if any(unit_running(service) for service in legacy_services):
+            raise SystemExit('Wait for the legacy updater run to finish before switching timers')
+        legacy_enabled = (units / 'timers.target.wants' / legacy_timer).is_symlink()
+        legacy_active = unit_running(legacy_timer)
+        if legacy_enabled or legacy_active:
+            run('systemctl', '--user', 'disable', '--now', legacy_timer)
+        try:
+            if any(unit_running(service) for service in legacy_services):
+                raise SystemExit('Legacy updater started during timer handoff')
+            run('systemctl', '--user', 'enable', '--now', 'chromiumQ-update.timer')
+        except BaseException:
+            run('systemctl', '--user', 'disable', '--now', 'chromiumQ-update.timer')
+            if legacy_enabled:
+                run('systemctl', '--user', 'enable', legacy_timer)
+            if legacy_active:
+                run('systemctl', '--user', 'start', legacy_timer)
+            raise
     print(json.dumps({'generation': str(generation), 'config': str(config), 'state': str(state), 'build_profile': profile_name, 'timer_enabled': args.enable}, indent=2))
 
 if __name__ == '__main__':

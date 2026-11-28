@@ -72,6 +72,18 @@ cleanup() {
     done
     kill -KILL -- "-$chrome_pid" 2>/dev/null || true
     wait "$chrome_pid" 2>/dev/null || true
+    # Signal delivery is asynchronous. Ignore exited zombies but wait for
+    # every live member of this owned session before removing its profile.
+    local live=""
+    for _ in $(seq 1 40); do
+      live="$(ps -eo sid=,stat= | awk -v sid="$chrome_pid" '$1 == sid && $2 !~ /^[ZX]/ { print $2 }')"
+      [[ -z "$live" ]] && break
+      sleep 0.05
+    done
+    if [[ -n "$live" ]]; then
+      echo "Smoke browser session $chrome_pid still has live processes. Profile retained at $tmpdir." >&2
+      exit 1
+    fi
   fi
   for _ in $(seq 1 3); do
     if rm -rf -- "$tmpdir"; then

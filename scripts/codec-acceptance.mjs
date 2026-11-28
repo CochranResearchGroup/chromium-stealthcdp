@@ -15,7 +15,19 @@ const result={schema:'stealthcdp.codec-acceptance.v1',startedAt:new Date().toISO
 const save=()=>writeFileSync(join(root,'result.json'),JSON.stringify(result,null,2)+'\n',{mode:0o600});save();
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 async function until(fn,label,ms=15000){const end=Date.now()+ms;do{const v=fn();if(v)return v;await delay(100)}while(Date.now()<end);throw Error('Timeout: '+label)}
-function profileWriters(profile){return readdirSync('/proc').filter(n=>/^\d+$/.test(n)).filter(n=>{try{return readFileSync('/proc/'+n+'/cmdline').includes(Buffer.from('--user-data-dir='+profile+'\0'))}catch{return false}})}
+function hasProfileWriters(profile, sessionId) {
+ const argument = Buffer.from('--user-data-dir=' + profile + '\0');
+ return readdirSync('/proc').filter(name => /^\d+$/.test(name)).some(pid => {
+  try {
+   const stat = readFileSync('/proc/' + pid + '/stat', 'utf8');
+   const [state, , , session] = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+   if (state === 'Z' || state === 'X') return false;
+   return Number(session) === sessionId || readFileSync('/proc/' + pid + '/cmdline').includes(argument);
+  } catch {
+   return false;
+  }
+ });
+}
 let child,profile,ws,server;let next=1;const pending=new Map();
 async function cdp(method,params={}){const id=next++;return await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timeout '+method))},30000);pending.set(id,{resolve,reject,timer});ws.send(JSON.stringify({id,method,params}))})}
 try{
@@ -52,6 +64,26 @@ try{
 }catch(error){result.success=false;result.phase='failed';result.error=error.stack;process.exitCode=1}
 finally{
  ws?.close();for(const p of pending.values()){clearTimeout(p.timer);p.reject(Error('CDP cleanup'))}pending.clear();
- try{if(child?.pid){try{process.kill(-child.pid,'SIGTERM')}catch{};await until(()=>profileWriters(profile).length===0,'owned profile writers exit',5000).catch(async()=>{try{process.kill(-child.pid,'SIGKILL')}catch{};await until(()=>profileWriters(profile).length===0,'owned profile writers exit after kill')});result.profileWritersGone=true}if(profile&&result.profileWritersGone){rmSync(profile,{recursive:true});result.profileRemoved=true}}catch(e){result.cleanupError=e.message;result.success=false;process.exitCode=1}
+ try {
+  if (child?.pid) {
+   const stopped = () => !hasProfileWriters(profile, child.pid);
+   try { process.kill(-child.pid, 'SIGTERM'); } catch {}
+   try {
+    await until(stopped, 'owned profile writers exit', 5000);
+   } catch {
+    try { process.kill(-child.pid, 'SIGKILL'); } catch {}
+    await until(stopped, 'owned profile writers exit after kill');
+   }
+   result.profileWritersGone = true;
+  }
+  if (profile && result.profileWritersGone) {
+   rmSync(profile, {recursive: true, maxRetries: 3, retryDelay: 100});
+   result.profileRemoved = true;
+  }
+ } catch (error) {
+  result.cleanupError = error.message;
+  result.success = false;
+  process.exitCode = 1;
+ }
  if(server){server.closeAllConnections();await new Promise(r=>server.close(r))}result.finishedAt=new Date().toISOString();save();console.log(JSON.stringify({success:result.success,observed:result.observed,error:result.error,profileWritersGone:result.profileWritersGone}));
 }

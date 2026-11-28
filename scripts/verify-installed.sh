@@ -5,15 +5,15 @@ usage() {
   cat <<'EOF'
 Usage: scripts/verify-installed.sh [--chrome PATH] [--manifest PATH] [--smoke-output PATH]
 
-Verifies an installed or extracted chromium-stealthcdp package by checking its
+Verifies an installed or extracted chromiumQ package by checking its
 manifest, version command, and navigator.webdriver CDP smoke.
 EOF
 }
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-chrome="/usr/bin/chromium-stealthcdp"
-manifest="/opt/chromium-stealthcdp/manifest.json"
-smoke_output="/tmp/chromium-stealthcdp-installed-smoke.json"
+chrome="/usr/bin/chromiumQ"
+manifest="/opt/chromiumQ/manifest.json"
+smoke_output="/tmp/chromiumQ-installed-smoke.json"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
