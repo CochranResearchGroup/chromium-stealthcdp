@@ -12,7 +12,7 @@ branch in the Agent Browser repository. Its dirty root is outside the write scop
 | Ticket | Blockers | Owner | State | Owned scope |
 | --- | --- | --- | --- | --- |
 | 0024 | None | agent_browser_0024 | running | Agent Browser worktree, identifiers, consumers and contracts |
-| 0025 | None | Coordinator | integrated | chromiumQ Linux/Windows installer, package and updater identities |
+| 0025 | None | Coordinator | validated | chromiumQ Linux/Windows installer, package and updater identities |
 | 0026 | 0024, 0025 | Coordinator | pending | Merged generation, managed activation and rollback verification |
 | 0027 | 0026 and verified census | Coordinator | pending | Legacy alias and active entry point retirement |
 
@@ -39,3 +39,18 @@ starts at epoch 1795837107. Stop and checkpoint before epoch 1795847907.
   installer has a 200 GiB free-disk reserve plus the candidate copy requirement.
   A readback during 0025 showed about 166 GiB available. Do not bypass the
   reserve or clean retained state merely to advance the ticket.
+
+### Validation checkpoint at f3acfe0
+
+- 0025 passed all 124 local tests. The previous full-suite smoke cleanup race
+  and the codec cleanup race observed on the staged binary each passed after
+  bounded owned-session verification. The final suite log is
+  `/tmp/chromiumq-0025-final-validation.log`.
+- The canonical-schema Chromium 158 candidate is under
+  `/home/ecochran76/workspace.local/chromium/artifacts/chromiumQ-candidates/identity-158-I74Myc/current`.
+  Its binary digest matches the existing installed artifact. The post-fix
+  decoder receipt records the revised harness separately from the earlier
+  staged manifest's recipe digest.
+- Stable Agent Browser runtime host reported inactive with exit status 9.
+  Preserve the active development lanes. Re-read stable runtime state and
+  ownership before ticket 0026. The legacy updater timer is still enabled.
