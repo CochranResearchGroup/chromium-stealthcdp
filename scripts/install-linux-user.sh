@@ -3,18 +3,20 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 artifact="$repo_root/../artifacts/chromium-stealthcdp/current"
+install_name=chromium-stealthcdp
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --artifact) artifact="${2:?artifact path required}"; shift 2 ;;
+    --chromiumq) install_name=chromiumQ; shift ;;
     -h|--help)
-      echo 'Usage: scripts/install-linux-user.sh [--artifact PATH]'
+      echo 'Usage: scripts/install-linux-user.sh [--artifact PATH] [--chromiumq]'
       echo 'Installs a verified artifact, PATH launcher and desktop browser choice for this user.'
       exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 
-python3 - "$artifact" <<'PY'
+python3 - "$artifact" "$install_name" <<'PY'
 import hashlib
 import configparser
 import json
@@ -48,10 +50,11 @@ assert not manifest['chromium']['dirty'] and not manifest['patchset']['dirty']
 
 data = Path(os.environ.get('XDG_DATA_HOME', str(Path.home() / '.local/share')))
 assert data.is_absolute(), 'XDG_DATA_HOME must be absolute'
-root = data / 'chromium-stealthcdp'
+install_name = sys.argv[2]
+root = data / install_name
 root.mkdir(mode=0o700, parents=True, exist_ok=True)
 version = root / name
-launcher = Path.home() / '.local/bin/chromium-stealthcdp'
+launcher = Path.home() / '.local/bin' / install_name
 assert not any(c in str(launcher) for c in '\n\r%"`$\\'), 'unsupported launcher path'
 executable = manifest['executable']['relativePath']
 launcher_target = root / 'current' / executable
@@ -86,13 +89,13 @@ def replace_symlink(path, target):
 
 replace_symlink(root / 'current', name)
 replace_symlink(launcher, str(launcher_target))
-desktop = data / 'applications/chromium-stealthcdp.desktop'
+desktop = data / 'applications' / f'{install_name}.desktop'
 desktop.parent.mkdir(parents=True, exist_ok=True)
 content = f'''[Desktop Entry]
 Version=1.0
 Type=Application
 Name=chromiumQ
-Comment=Stable Chromium with private CDP behavior
+Comment=Chromium for reliable browser automation testing
 Exec="{launcher}" %U
 TryExec={launcher}
 Icon=web-browser
