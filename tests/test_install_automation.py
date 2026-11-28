@@ -64,7 +64,14 @@ class InstallerTests(unittest.TestCase):
             depot.mkdir()
             state = home / 'owned-updater-state'
             state.mkdir()
-            (state / 'baseline.json').write_text(json.dumps({'acceptance': {'success': True}}))
+            (state / 'baseline.json').write_text(json.dumps({
+                'version': '157.0.8103.78',
+                'publication': {'tag': 'v157.0.8103.78-fixture'},
+                'deployment': {
+                    'status': 'committed',
+                    'acceptance': {'success': True, 'version': 'Chromium 157.0.8103.78'},
+                },
+            }))
             config = home / '.config/chromium-stealthcdp/automation.json'
             config.parent.mkdir(parents=True)
             config.write_text(json.dumps({'state_dir': str(state), 'build_profile': 'conservative',
@@ -93,6 +100,27 @@ class InstallerTests(unittest.TestCase):
             self.assertEqual(new['build_profile'], 'conservative')
             self.assertEqual(new['approved_queue'], 'existing-pinned-queue')
 
+
+    def test_updater_baseline_requires_a_published_committed_matching_acceptance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            baseline = Path(directory) / 'baseline.json'
+            self.assertFalse(installer.baseline_accepted(baseline))
+            for status, accepted_version, publication, expected in [
+                ('committed', 'Chromium 157', {'tag': 'v157'}, True),
+                ('rolled_back', 'Chromium 157', {'tag': 'v157'}, False),
+                ('committed', 'Chromium 156', {'tag': 'v157'}, False),
+                ('committed', 'Chromium 157', {}, False),
+            ]:
+                with self.subTest(status=status, accepted_version=accepted_version, publication=publication):
+                    baseline.write_text(json.dumps({
+                        'version': '157', 'publication': publication,
+                        'deployment': {'status': status, 'acceptance': {
+                            'success': True, 'version': accepted_version,
+                        }},
+                    }))
+                    self.assertEqual(installer.baseline_accepted(baseline), expected)
+            baseline.write_text(json.dumps({'acceptance': {'success': True}}))
+            self.assertTrue(installer.baseline_accepted(baseline))
 
     def test_dispatch_selects_a_bounded_unit_for_each_trigger(self):
         import automation_trigger
