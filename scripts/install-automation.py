@@ -24,6 +24,22 @@ def unit_running(unit):
     raise RuntimeError(f'Cannot establish {unit} activity: {state!r}')
 
 
+def baseline_accepted(path):
+    if not path.is_file():
+        return False
+    baseline = json.loads(path.read_text())
+    # Explicit adoption stores acceptance directly. A completed updater run
+    # stores it inside the committed deployment and supersedes that baseline.
+    if 'acceptance' in baseline:
+        return baseline['acceptance'].get('success') is True
+    deployment = baseline.get('deployment', {})
+    acceptance = deployment.get('acceptance', {})
+    version = baseline.get('version')
+    return (bool(version) and bool(baseline.get('publication', {}).get('tag'))
+            and deployment.get('status') == 'committed' and acceptance.get('success') is True
+            and acceptance.get('version') == f'Chromium {version}')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--depot-tools', required=True, type=Path)
@@ -144,7 +160,7 @@ raise SystemExit('Usage: chromiumQ-update [run|status|logs]')
     run('systemctl', '--user', 'daemon-reload')
     if args.enable:
         baseline = state / 'baseline.json'
-        if not baseline.exists() or not json.loads(baseline.read_text()).get('acceptance', {}).get('success'):
+        if not baseline_accepted(baseline):
             raise SystemExit('Adopt and accept published installed baseline before enabling timer')
         legacy_timer = 'chromium-stealthcdp-update.timer'
         legacy_services = ('chromium-stealthcdp-update.service',
