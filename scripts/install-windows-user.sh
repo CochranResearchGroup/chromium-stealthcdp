@@ -132,7 +132,12 @@ fi
 
 mkdir -p "$dest"
 cp -a "$artifact/chrome-win64/." "$dest/"
-cp -a "$artifact/manifest.json" "$dest/manifest.json"
+node - "$manifest" "$dest/manifest.json" <<'NODE'
+const fs = require('node:fs');
+const manifest = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+manifest.executable.relativePath = 'chrome.exe';
+fs.writeFileSync(process.argv[3], JSON.stringify(manifest, null, 2) + '\n');
+NODE
 if [[ -f "$artifact/smoke-win.json" ]]; then
   cp -a "$artifact/smoke-win.json" "$dest/smoke-win.json"
 fi

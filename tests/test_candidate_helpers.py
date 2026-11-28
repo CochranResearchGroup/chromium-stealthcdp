@@ -82,6 +82,9 @@ class CandidateHelperTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 install = app_data / 'chromiumQ'
                 self.assertEqual((install / name / 'chrome.exe').read_bytes(), b'candidate browser')
+                installed = json.loads((install / name / 'manifest.json').read_text())
+                installed_executable = install / name / installed['executable']['relativePath']
+                self.assertTrue(installed_executable.is_file())
                 self.assertIn(str(install / 'current'), junction_command.read_text())
                 self.assertIn(str(install / name), junction_command.read_text())
                 self.assertEqual((legacy / 'chrome.exe').read_bytes(), b'old browser')
